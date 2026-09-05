@@ -196,7 +196,11 @@ function tlItem(v) {
 }
 
 async function renderVersion(id) {
-  const [v, trace] = await Promise.all([api("/versions/" + id), api(`/versions/${id}/trace`)]);
+  const [v, trace, attempts] = await Promise.all([
+    api("/versions/" + id),
+    api(`/versions/${id}/trace`),
+    api(`/versions/${id}/attempts`).catch(() => []),
+  ]);
   let diff = "";
   try { diff = await api(`/versions/${id}/diff`); } catch {}
 
@@ -245,6 +249,10 @@ async function renderVersion(id) {
     (v.changed_files && v.changed_files.length ? `<div class="card" style="margin-top:16px">
       <div class="card-head">Files changed</div>
       <div class="card-pad files-list">${v.changed_files.map(fileRow).join("")}</div>
+    </div>` : "") +
+    (attempts.length ? `<div class="card" style="margin-top:16px;border-color:var(--warn)">
+      <div class="card-head">⚠ Previous attempts touching this area</div>
+      <div class="card-pad grid" style="gap:10px">${attempts.map(attemptCard).join("")}</div>
     </div>` : "") +
     (v.analysis && v.analysis.summary ? `<div class="card" style="margin-top:16px">
       <div class="card-head">Analysis <span class="muted" style="text-transform:none">· ${esc(v.analysis.provider)}</span></div>
@@ -378,19 +386,43 @@ function compareResult(c) {
     ${c.diff_text ? `<div class="card"><div class="card-head">Diff</div>${renderDiff(c.diff_text)}</div>` : ""}`;
 }
 
-async function renderMemory() {
-  const versions = await api("/versions?limit=500");
-  const bad = versions.filter((v) => v.status === "REGRESSION" || v.status === "ERROR" || v.has_regression).reverse();
+async function renderMemory(arg) {
+  const q = decodeURIComponent(arg || "");
+  const attempts = await api("/attempts?limit=50" + (q ? "&q=" + encodeURIComponent(q) : ""));
   view.innerHTML =
-    pageHead("Development memory", "Approaches that failed or regressed — so they aren't repeated") +
-    (bad.length
-      ? `<div class="card">${bad.map((v) => `<a class="vrow" href="#/version/${esc(v.version_id)}">
-          <div class="vid">${esc(v.version_id.toUpperCase())}</div>
-          <div>${badge(v.status)}</div>
-          <div><div class="vintent">${esc(v.intent || "—")}</div><div class="vmeta">${esc(v.agent || "—")}${v.feature ? " · " + esc(v.feature) : ""}</div></div>
-          <div class="pill">${esc(short(v.git_commit))}</div>
-        </a>`).join("")}</div>`
-      : empty("No failed approaches recorded", "Nothing to avoid — yet."));
+    pageHead("Development memory", "Approaches that failed or regressed — so the next agent doesn't repeat them") +
+    `<input class="search-box" id="mq" placeholder="scope by intent: token expiry, learning rate, auth …" value="${esc(q)}" style="margin-bottom:16px" />
+     <div id="mres">${attemptList(attempts)}</div>`;
+  const input = $("#mq");
+  let t;
+  input.addEventListener("input", () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      const v = input.value.trim();
+      location.hash = "#/memory/" + encodeURIComponent(v);
+      $("#mres").innerHTML = loading();
+      $("#mres").innerHTML = attemptList(await api("/attempts?limit=50" + (v ? "&q=" + encodeURIComponent(v) : "")));
+    }, 250);
+  });
+}
+
+function attemptList(attempts) {
+  if (!attempts.length) return empty("No relevant previous attempts", "Nothing to avoid — yet.");
+  return `<div class="grid" style="gap:12px">${attempts.map(attemptCard).join("")}</div>`;
+}
+
+function attemptCard(a) {
+  return `<div class="card card-pad" style="border-left:3px solid ${a.is_adverse ? "var(--bad)" : "var(--border-strong)"}">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <a class="vid link" href="#/version/${esc(a.version_id)}">${esc(a.version_id.toUpperCase())}</a>
+      ${badge(a.status)}
+      ${a.feature ? `<span class="pill">${esc(a.feature)}</span>` : ""}
+      <span class="muted" style="margin-left:auto;font-size:12px">${esc(a.matched_on.join(" · "))}</span>
+    </div>
+    <div style="font-size:14px">${esc(a.intent || a.change_summary)}</div>
+    <div class="secondary" style="font-size:13px;margin-top:4px">result: ${esc(a.result)}</div>
+    ${a.recommendation ? `<div style="font-size:13px;margin-top:6px;color:var(--accent)">→ ${esc(a.recommendation)}</div>` : ""}
+  </div>`;
 }
 
 async function renderSearch(q) {

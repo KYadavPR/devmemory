@@ -6,6 +6,22 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 7: development memory / previous attempts
+
+- `services.memory.previous_attempts`: given a scope (files being changed,
+  feature, intent), rank historical versions by changed-file overlap + feature
+  match + intent-keyword overlap (FTS) + adverse status. Returns each with a
+  "why this matched", a one-line result summary, and a recommendation. Failed and
+  regressed attempts only, unless successes are requested.
+- Pipeline stage `check_previous_attempts`: warns during `devmemory checkpoint`
+  when the current change resembles a past regression ("similar prior attempt
+  V2 [REGRESSION] — …").
+- CLI: `devmemory memory` (`--file`, `--feature`, `--intent`,
+  `--include-successes`, `--json`).
+- API: `GET /api/attempts` and `GET /api/versions/{ref}/attempts`.
+- Dashboard: the Memory tab now scores real previous attempts; the Version
+  detail page shows a "⚠ Previous attempts touching this area" panel.
+
 ### Added — Phase 6: test + metric collection, regression detection
 
 - `TestAdapter`: runs the configured `tests.command` and normalizes the result —

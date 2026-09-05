@@ -34,6 +34,7 @@ from devmemory.pipeline.runlog import RunLog, StageRecord
 from devmemory.pipeline.status_rules import derive_status
 from devmemory.services.context import ProjectContext
 from devmemory.services.features import refresh_feature_status
+from devmemory.services.memory import MemoryQuery, previous_attempts
 from devmemory.services.versions import create_version_from_event
 from devmemory.storage.versions import VersionRepository
 
@@ -161,6 +162,27 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
 
         with run.stage("collect_metrics") as st:
             metrics = _collect_metrics(ctx, request, previous, st)
+
+        with run.stage("check_previous_attempts") as st:
+            prior = previous_attempts(
+                ctx,
+                MemoryQuery(
+                    files=[f.path for f in changed_files],
+                    feature=feature[0] if feature else None,
+                    intent=intent,
+                    limit=3,
+                ),
+            )
+            for a in prior:
+                if a.version_id in {v.version_id for v in [previous] if v}:
+                    continue
+                warnings.append(
+                    f"similar prior attempt {a.version_id.upper()} [{a.status}] - "
+                    f"{a.result}" + (f" ({a.recommendation})" if a.recommendation else "")
+                )
+            st.data["matches"] = [a.version_id for a in prior]
+            if prior:
+                st.status = "degraded"
 
         with run.stage("detect_regression") as st:
             regressions = detect_regressions(

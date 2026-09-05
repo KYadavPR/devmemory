@@ -29,6 +29,7 @@ from devmemory.domain.errors import DevMemoryError
 from devmemory.domain.models import CheckpointReference, DevelopmentVersion, EntireStatus
 from devmemory.services.context import ProjectContext
 from devmemory.services.features import get_feature, list_features
+from devmemory.services.memory import MemoryQuery, PreviousAttempt, previous_attempts
 from devmemory.services.projects import project_status
 from devmemory.services.trace import DevelopmentTrace, development_trace
 from devmemory.services.versions import (
@@ -154,6 +155,42 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.get("/api/features/{ref}", response_model=FeatureDetail)
     def feature(ctx: Ctx, ref: str) -> FeatureDetail:
         return mappers.feature_detail(get_feature(ctx, ref))
+
+    # -- development memory --------------------------------------
+
+    @app.get("/api/attempts", response_model=list[PreviousAttempt])
+    def attempts(
+        ctx: Ctx,
+        feature: Annotated[str | None, Query()] = None,
+        q: Annotated[str | None, Query()] = None,
+        file: Annotated[list[str] | None, Query()] = None,
+        include_successes: Annotated[bool, Query()] = False,
+        limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    ) -> list[PreviousAttempt]:
+        return previous_attempts(
+            ctx,
+            MemoryQuery(
+                files=file or [],
+                feature=feature,
+                intent=q,
+                include_successes=include_successes,
+                limit=limit,
+            ),
+        )
+
+    @app.get("/api/versions/{ref}/attempts", response_model=list[PreviousAttempt])
+    def version_attempts(ctx: Ctx, ref: str) -> list[PreviousAttempt]:
+        v = get_version(ctx, ref)
+        found = previous_attempts(
+            ctx,
+            MemoryQuery(
+                files=[f.path for f in v.changed_files],
+                feature=v.feature_id.split(":", 1)[-1] if v.feature_id else None,
+                intent=v.intent,
+                limit=6,
+            ),
+        )
+        return [a for a in found if a.version_id != v.version_id]
 
     # -- search ---------------------------------------------------
 
