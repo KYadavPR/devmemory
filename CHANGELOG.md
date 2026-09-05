@@ -6,6 +6,15 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 8: version comparison + search CLI
+
+- CLI: `devmemory diff FROM TO` (raw git diff), `devmemory compare FROM TO`
+  (`--diff`, `--json`) — files by change type, line totals, metric deltas, test
+  deltas, status transition — and `devmemory search QUERY` (`--json`).
+- `VersionDiff` / `/api/compare` now also report the version numbers, feature
+  transition, and the checkpoint on each side.
+- Dev: `pytest-xdist`; CI runs the suite with `-n auto` (~4x faster).
+
 ### Added — Phase 7: development memory / previous attempts
 
 - `services.memory.previous_attempts`: given a scope (files being changed,

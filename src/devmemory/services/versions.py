@@ -47,6 +47,8 @@ class VersionDiff(BaseModel):
     to_version_id: str
     from_commit: str
     to_commit: str
+    from_number: int
+    to_number: int
     files: list[ChangedFile]
     stat: DiffStat
     diff_text: str
@@ -54,6 +56,10 @@ class VersionDiff(BaseModel):
     test_changes: dict[str, int | None]
     status_from: VersionStatus
     status_to: VersionStatus
+    feature_from: str | None = None
+    feature_to: str | None = None
+    checkpoint_from: str | None = None
+    checkpoint_to: str | None = None
 
 
 def create_version_from_event(
@@ -190,6 +196,8 @@ def version_diff(ctx: ProjectContext, from_ref: str, to_ref: str) -> VersionDiff
         to_version_id=b.version_id,
         from_commit=a.git_commit,
         to_commit=b.git_commit,
+        from_number=a.version_number,
+        to_number=b.version_number,
         files=files,
         stat=DiffStat.from_files(files),
         diff_text=diff_text,
@@ -204,6 +212,10 @@ def version_diff(ctx: ProjectContext, from_ref: str, to_ref: str) -> VersionDiff
         },
         status_from=a.status,
         status_to=b.status,
+        feature_from=a.feature_id.split(":", 1)[-1] if a.feature_id else None,
+        feature_to=b.feature_id.split(":", 1)[-1] if b.feature_id else None,
+        checkpoint_from=a.primary_checkpoint.checkpoint_id if a.primary_checkpoint else None,
+        checkpoint_to=b.primary_checkpoint.checkpoint_id if b.primary_checkpoint else None,
     )
 
 

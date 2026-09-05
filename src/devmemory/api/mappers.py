@@ -108,6 +108,10 @@ def comparison_response(diff: VersionDiff) -> ComparisonResponse:
         test_changes=diff.test_changes,
         status_from=diff.status_from.value,
         status_to=diff.status_to.value,
+        feature_from=diff.feature_from,
+        feature_to=diff.feature_to,
+        checkpoint_from=diff.checkpoint_from,
+        checkpoint_to=diff.checkpoint_to,
     )
 
 

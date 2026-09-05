@@ -35,7 +35,10 @@ def _seed_history(project: ProjectContext, repo: TmpGitRepo) -> None:
     repo.write("auth.py", "EXPIRY = 3600\ndef login(): ...\n")
     repo.commit("feat: add login")
     _checkpoint(
-        project, intent="Add JWT authentication", feature="Authentication", status=VersionStatus.SUCCESS
+        project,
+        intent="Add JWT authentication",
+        feature="Authentication",
+        status=VersionStatus.SUCCESS,
     )
 
     # v2: shorten token expiry - REGRESSION
@@ -53,7 +56,9 @@ def _seed_history(project: ProjectContext, repo: TmpGitRepo) -> None:
     # v3: unrelated - success
     repo.write("calc.py", "def add(a, b): return a + b\n")
     repo.commit("feat: add calculator")
-    _checkpoint(project, intent="Add a calculator", feature="Calculator", status=VersionStatus.SUCCESS)
+    _checkpoint(
+        project, intent="Add a calculator", feature="Calculator", status=VersionStatus.SUCCESS
+    )
 
 
 def test_previous_attempts_by_files(project: ProjectContext, git_repo: TmpGitRepo) -> None:

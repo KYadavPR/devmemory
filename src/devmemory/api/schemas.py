@@ -75,6 +75,10 @@ class ComparisonResponse(BaseModel):
     test_changes: dict[str, int | None]
     status_from: str
     status_to: str
+    feature_from: str | None = None
+    feature_to: str | None = None
+    checkpoint_from: str | None = None
+    checkpoint_to: str | None = None
 
 
 class FeatureHistoryPoint(BaseModel):
