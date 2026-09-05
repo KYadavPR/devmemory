@@ -92,6 +92,22 @@ class GitAdapter:
         """stdout with no stripping - for NUL-delimited (`-z`) output."""
         return self._run(*args).stdout
 
+    def _run_bytes(self, *args: str) -> bytes:
+        cmd = [self._git, "-c", "core.autocrlf=false", "--no-pager", *args]
+        env = {**os.environ, "GIT_OPTIONAL_LOCKS": "0", "GIT_TERMINAL_PROMPT": "0"}
+        try:
+            proc = subprocess.run(  # noqa: S603 - fixed binary, arg list, no shell
+                cmd, cwd=self._cwd, env=env, capture_output=True, timeout=300
+            )
+        except (FileNotFoundError, subprocess.SubprocessError) as exc:
+            raise GitError(f"git {' '.join(args)} failed: {exc}") from exc
+        if proc.returncode != 0:
+            raise GitError(
+                f"git {' '.join(args)} failed ({proc.returncode}): "
+                f"{proc.stderr.decode(errors='replace').strip()}"
+            )
+        return proc.stdout
+
     # -- repository ---------------------------------------------------------
 
     def is_repository(self) -> bool:
@@ -288,6 +304,42 @@ class GitAdapter:
 
     def is_dirty(self) -> bool:
         return not self.working_tree_state().is_clean
+
+    # -- snapshots & restore (the only mutating operations) --------------
+
+    def archive_tar(self, rev: str) -> bytes:
+        """The committed tree at ``rev`` as an uncompressed tar (bytes)."""
+        return self._run_bytes("archive", "--format=tar", self.resolve(rev))
+
+    def create_tag(self, name: str, rev: str = "HEAD", *, message: str | None = None) -> None:
+        args = ["tag", name, self.resolve(rev)]
+        if message:
+            args = ["tag", "-a", name, "-m", message, self.resolve(rev)]
+        self._run(*args)
+
+    def stash_create(self) -> str | None:
+        """Object id of a commit capturing the current dirty state, or ``None`` if clean.
+
+        ``git stash create`` records but does not touch the working tree or the
+        stash list - a pure safety reference.
+        """
+        out = self._out("stash", "create", "devmemory: pre-restore safety")
+        return out or None
+
+    def checkout_detached(self, rev: str) -> str:
+        """Move HEAD to ``rev`` in detached state, keeping local changes out of the way."""
+        sha = self.resolve(rev)
+        self._run("checkout", "--detach", "--force", sha)
+        return sha
+
+    def reset_hard(self, rev: str) -> str:
+        sha = self.resolve(rev)
+        self._run("reset", "--hard", sha)
+        return sha
+
+    def restore_worktree_paths(self, rev: str, paths: list[str]) -> None:
+        if paths:
+            self._run("checkout", self.resolve(rev), "--", *paths)
 
 
 # --- helpers ----------------------------------------------------------------------

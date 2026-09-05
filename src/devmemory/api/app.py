@@ -31,6 +31,12 @@ from devmemory.services.context import ProjectContext
 from devmemory.services.features import get_feature, list_features
 from devmemory.services.memory import MemoryQuery, PreviousAttempt, previous_attempts
 from devmemory.services.projects import project_status
+from devmemory.services.restore import (
+    RestorePreview,
+    RestoreResult,
+    restore_preview,
+    restore_version,
+)
 from devmemory.services.trace import DevelopmentTrace, development_trace
 from devmemory.services.versions import (
     get_version,
@@ -155,6 +161,26 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.get("/api/features/{ref}", response_model=FeatureDetail)
     def feature(ctx: Ctx, ref: str) -> FeatureDetail:
         return mappers.feature_detail(get_feature(ctx, ref))
+
+    # -- restore ------------------------------------------------
+
+    @app.get("/api/versions/{ref}/restore/preview", response_model=RestorePreview)
+    def restore_preview_endpoint(ctx: Ctx, ref: str) -> RestorePreview:
+        return restore_preview(ctx, ref)
+
+    @app.post("/api/versions/{ref}/restore", response_model=RestoreResult)
+    def restore_endpoint(
+        ctx: Ctx,
+        ref: str,
+        mode: Annotated[str, Query(pattern="^(detach|hard)$")] = "detach",
+        allow_dirty: Annotated[bool, Query()] = False,
+    ) -> RestoreResult:
+        if not app.state.enable_restore:
+            raise HTTPException(
+                status_code=403,
+                detail="restore is disabled; start the server with `devmemory serve --enable-restore`",
+            )
+        return restore_version(ctx, ref, mode=mode, allow_dirty=allow_dirty)
 
     # -- development memory --------------------------------------
 

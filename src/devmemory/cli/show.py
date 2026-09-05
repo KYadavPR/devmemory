@@ -61,6 +61,10 @@ def show_command(
                 f"{v.tests.passed} passed / {v.tests.failed} failed / {v.tests.skipped} skipped",
             )
         )
+    if v.artifacts:
+        a = v.artifacts[0]
+        kb = f"{a.size_bytes / 1024:.0f} KB" if a.size_bytes else "?"
+        rows.append(("snapshot", f"{a.path}  [dim]{kb}[/dim]"))
     if v.committed_at:
         rows.append(("committed", v.committed_at.isoformat(timespec="minutes")))
     console.print(kv_table(rows))

@@ -36,6 +36,7 @@ from devmemory.services.context import ProjectContext
 from devmemory.services.features import refresh_feature_status
 from devmemory.services.memory import MemoryQuery, previous_attempts
 from devmemory.services.versions import create_version_from_event
+from devmemory.storage.artifacts import ArtifactStore
 from devmemory.storage.versions import VersionRepository
 
 _log = get_logger(__name__)
@@ -54,6 +55,7 @@ class CheckpointRequest(BaseModel):
     metrics: list[Metric] = []
     metrics_file: str | None = None
     errors: list[str] = []
+    snapshot: bool = True
     allow_no_entire: bool = False
     force: bool = False
 
@@ -243,6 +245,24 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
                 st.data["feature_status"] = updated.status.value if updated else None
             else:
                 st.status = "skipped"
+
+        with run.stage("create_artifact") as st:
+            if not request.snapshot or not ctx.config.artifacts.enabled:
+                st.status = "skipped"
+            else:
+                try:
+                    artifact = ArtifactStore(ctx.paths.artifacts_dir, ctx.git).create_snapshot(
+                        version_id=version.version_id,
+                        commit_sha=version.git_commit,
+                        exclude=ctx.config.artifacts.exclude,
+                    )
+                    VersionRepository(ctx.db).add_artifact(artifact)
+                    version.artifacts = [artifact]
+                    st.data |= {"path": artifact.path, "bytes": artifact.size_bytes}
+                except DevMemoryError as exc:
+                    st.status = "degraded"
+                    st.detail = exc.message
+                    warnings.append(f"snapshot skipped: {exc.message}")
 
         run.finish(outcome="success")
     except DevMemoryError as exc:

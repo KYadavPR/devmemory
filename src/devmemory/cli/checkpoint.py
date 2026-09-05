@@ -67,6 +67,10 @@ def checkpoint_command(
     errors: Annotated[
         list[str] | None, typer.Option("--error", "-e", help="An error encountered (repeatable).")
     ] = None,
+    snapshot: Annotated[
+        bool,
+        typer.Option("--snapshot/--no-snapshot", help="Archive the source tree for this version."),
+    ] = True,
     allow_no_entire: Annotated[
         bool,
         typer.Option("--allow-no-entire", help="Record even without an Entire checkpoint."),
@@ -88,6 +92,7 @@ def checkpoint_command(
         metrics=[_parse_metric(m) for m in (metrics or [])],
         metrics_file=metrics_file,
         errors=list(errors or []),
+        snapshot=snapshot,
         allow_no_entire=allow_no_entire,
         force=force,
     )

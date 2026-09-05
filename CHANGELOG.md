@@ -6,6 +6,26 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 9: project snapshots + safe restore
+
+- `ArtifactStore`: a `.tar.gz` snapshot per version, built from `git archive`
+  (the committed tree, no working-tree noise), repacked through `tarfile` to
+  apply exclusions and record a deterministic sha256. Pipeline stage
+  `create_artifact` (skippable with `--no-snapshot` or `artifacts.enabled`).
+- `GitAdapter` gains its only mutating operations: `archive_tar`, `create_tag`,
+  `stash_create` (a pure safety reference), `checkout_detached`, `reset_hard`.
+- `services.restore`: `restore_preview` (reports the target commit, current HEAD,
+  dirty files, and the safety-tag name — touches nothing) and `restore_version`
+  — refuses a dirty tree unless `allow_dirty`, always writes a `devmemory/safety/<ts>`
+  tag at the current HEAD (plus a `git stash create` ref if dirty) *before*
+  moving HEAD, detached checkout by default, `--hard` only on explicit request,
+  records a `restore` event, and returns the exact recovery command.
+- CLI: `devmemory restore <ref>` (`--yes`, `--hard`, `--allow-dirty`, `--json`) —
+  previews and prompts by default.
+- API: `GET /api/versions/{ref}/restore/preview` and `POST .../restore`
+  (403 unless the server was started with `--enable-restore`).
+- `devmemory show` now lists the version's snapshot.
+
 ### Added — Phase 8: version comparison + search CLI
 
 - CLI: `devmemory diff FROM TO` (raw git diff), `devmemory compare FROM TO`

@@ -24,6 +24,7 @@ from devmemory.cli.compare import compare_command, diff_command
 from devmemory.cli.history import history_command
 from devmemory.cli.init import init_command
 from devmemory.cli.memory import memory_command
+from devmemory.cli.restore import restore_command
 from devmemory.cli.search import search_command
 from devmemory.cli.serve import serve_command
 from devmemory.cli.show import show_command
@@ -115,6 +116,7 @@ app.command(name="diff")(handle_errors(diff_command))
 app.command(name="compare")(handle_errors(compare_command))
 app.command(name="search")(handle_errors(search_command))
 app.command(name="memory")(handle_errors(memory_command))
+app.command(name="restore")(handle_errors(restore_command))
 app.command(name="serve")(handle_errors(serve_command))
 
 
