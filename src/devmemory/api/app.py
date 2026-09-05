@@ -6,7 +6,9 @@ objects at decoration time, and the local ``Ctx`` alias would not resolve as a
 string.
 """
 
-from collections.abc import Iterator
+import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
 
@@ -24,7 +26,7 @@ from devmemory.api.schemas import (
     VersionListItem,
 )
 from devmemory.domain.errors import DevMemoryError
-from devmemory.domain.models import CheckpointReference, DevelopmentVersion
+from devmemory.domain.models import CheckpointReference, DevelopmentVersion, EntireStatus
 from devmemory.services.context import ProjectContext
 from devmemory.services.features import get_feature, list_features
 from devmemory.services.projects import project_status
@@ -37,18 +39,35 @@ from devmemory.services.versions import (
 )
 
 _FRONTEND_DIR = Path(__file__).parent / "static"
+_PROBE_TTL = 20.0
 
 
-def _context_for(repo_path: Path | None) -> Iterator[ProjectContext]:
-    ctx = ProjectContext.load(repo_path)
-    try:
-        yield ctx
-    finally:
-        ctx.close()
+class _ProbeCache:
+    """The Entire probe shells out; cache it briefly so the dashboard stays snappy."""
+
+    def __init__(self) -> None:
+        self._at = 0.0
+        self._value: EntireStatus | None = None
+
+    def get(self, ctx: ProjectContext) -> EntireStatus:
+        now = time.monotonic()
+        if self._value is None or now - self._at > _PROBE_TTL:
+            self._value = ctx.entire.probe()
+            self._at = now
+        return self._value
 
 
 def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = False) -> FastAPI:
     resolved = Path(repo_path) if repo_path else None
+    holder: dict[str, ProjectContext] = {}
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        holder["ctx"] = ProjectContext.load(resolved, thread_safe=True)
+        try:
+            yield
+        finally:
+            holder.pop("ctx").close()
 
     app = FastAPI(
         title="DevMemory",
@@ -56,11 +75,16 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
         summary="Development-memory and version-intelligence dashboard API",
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
+        lifespan=lifespan,
     )
     app.state.enable_restore = enable_restore
+    probe_cache = _ProbeCache()
 
-    def get_ctx() -> Iterator[ProjectContext]:
-        yield from _context_for(resolved)
+    def get_ctx() -> ProjectContext:
+        # One shared, thread-safe context for the life of the server.
+        if "ctx" not in holder:  # pragma: no cover - only outside the lifespan
+            holder["ctx"] = ProjectContext.load(resolved, thread_safe=True)
+        return holder["ctx"]
 
     Ctx = Annotated[ProjectContext, Depends(get_ctx)]  # noqa: N806 - a type alias
 
@@ -78,7 +102,7 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.get("/api/project", response_model=ProjectSummary)
     @app.get("/api/status", response_model=ProjectSummary)
     def project(ctx: Ctx) -> ProjectSummary:
-        return mappers.project_summary(project_status(ctx, entire_probe=ctx.entire.probe()))
+        return mappers.project_summary(project_status(ctx, entire_probe=probe_cache.get(ctx)))
 
     # -- versions ------------------------------------------------------
 

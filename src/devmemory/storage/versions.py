@@ -53,30 +53,28 @@ class VersionRepository:
     # -- numbering / lookup ------------------------------------------------
 
     def next_version_number(self, project_id: str) -> int:
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT COALESCE(MAX(version_number), 0) + 1 AS n FROM versions WHERE project_id = ?",
             (project_id,),
-        ).fetchone()
-        return int(row["n"])
+        )
+        return int(row["n"]) if row else 1
 
     def find_by_commit(self, project_id: str, git_commit: str) -> DevelopmentVersion | None:
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT * FROM versions WHERE project_id = ? AND git_commit = ?",
             (project_id, git_commit),
-        ).fetchone()
+        )
         return self._hydrate(row) if row else None
 
     def get(self, version_id: str) -> DevelopmentVersion | None:
-        row = self._db.connection.execute(
-            "SELECT * FROM versions WHERE version_id = ?", (version_id,)
-        ).fetchone()
+        row = self._db.query_one("SELECT * FROM versions WHERE version_id = ?", (version_id,))
         return self._hydrate(row) if row else None
 
     def get_by_number(self, project_id: str, number: int) -> DevelopmentVersion | None:
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT * FROM versions WHERE project_id = ? AND version_number = ?",
             (project_id, number),
-        ).fetchone()
+        )
         return self._hydrate(row) if row else None
 
     def resolve(self, project_id: str, ref: str) -> DevelopmentVersion | None:
@@ -86,24 +84,24 @@ class VersionRepository:
             token = token[1:]
         if token.isdigit():
             return self.get_by_number(project_id, int(token))
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT * FROM versions WHERE project_id = ? AND git_commit LIKE ?",
             (project_id, f"{ref}%"),
-        ).fetchone()
+        )
         return self._hydrate(row) if row else None
 
     def latest(self, project_id: str) -> DevelopmentVersion | None:
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT * FROM versions WHERE project_id = ? ORDER BY version_number DESC LIMIT 1",
             (project_id,),
-        ).fetchone()
+        )
         return self._hydrate(row) if row else None
 
     def count(self, project_id: str) -> int:
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT COUNT(*) AS c FROM versions WHERE project_id = ?", (project_id,)
-        ).fetchone()
-        return int(row["c"])
+        )
+        return int(row["c"]) if row else 0
 
     def page(
         self,
@@ -114,11 +112,11 @@ class VersionRepository:
         ascending: bool = True,
     ) -> list[DevelopmentVersion]:
         order = "ASC" if ascending else "DESC"  # literal, not user input
-        rows = self._db.connection.execute(
+        rows = self._db.query(
             "SELECT * FROM versions WHERE project_id = ? "  # noqa: S608
             f"ORDER BY version_number {order} LIMIT ? OFFSET ?",
             (project_id, limit, offset),
-        ).fetchall()
+        )
         return [self._hydrate(r) for r in rows]
 
     def previous_relevant(
@@ -126,25 +124,25 @@ class VersionRepository:
     ) -> DevelopmentVersion | None:
         """The version to compare against for regression detection."""
         if feature_id:
-            row = self._db.connection.execute(
+            row = self._db.query_one(
                 "SELECT * FROM versions WHERE project_id = ? AND version_number < ? "
                 "AND feature_id = ? ORDER BY version_number DESC LIMIT 1",
                 (project_id, before_number, feature_id),
-            ).fetchone()
+            )
             if row:
                 return self._hydrate(row)
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT * FROM versions WHERE project_id = ? AND version_number < ? "
             "ORDER BY version_number DESC LIMIT 1",
             (project_id, before_number),
-        ).fetchone()
+        )
         return self._hydrate(row) if row else None
 
     def for_feature(self, feature_id: str) -> list[DevelopmentVersion]:
-        rows = self._db.connection.execute(
+        rows = self._db.query(
             "SELECT * FROM versions WHERE feature_id = ? ORDER BY version_number ASC",
             (feature_id,),
-        ).fetchall()
+        )
         return [self._hydrate(r) for r in rows]
 
     # -- write ----------------------------------------------------------
@@ -431,7 +429,7 @@ class VersionRepository:
 
     def _hydrate(self, row: sqlite3.Row) -> DevelopmentVersion:
         vid = row["version_id"]
-        conn = self._db.connection
+        q = self._db.query
 
         changed_files = [
             ChangedFile(
@@ -442,14 +440,12 @@ class VersionRepository:
                 deletions=r["deletions"],
                 binary=bool(r["binary"]),
             )
-            for r in conn.execute(
-                "SELECT * FROM changed_files WHERE version_id = ? ORDER BY id", (vid,)
-            )
+            for r in q("SELECT * FROM changed_files WHERE version_id = ? ORDER BY id", (vid,))
         ]
 
-        test_row = conn.execute(
+        test_row = self._db.query_one(
             "SELECT * FROM tests WHERE version_id = ? ORDER BY id DESC LIMIT 1", (vid,)
-        ).fetchone()
+        )
         tests = _test_from_row(test_row) if test_row else None
 
         metrics = [
@@ -461,7 +457,7 @@ class VersionRepository:
                 direction=MetricDirection(r["direction"] or MetricDirection.HIGHER_IS_BETTER.value),
                 metadata=json.loads(r["metadata_json"]) if r["metadata_json"] else {},
             )
-            for r in conn.execute("SELECT * FROM metrics WHERE version_id = ? ORDER BY id", (vid,))
+            for r in q("SELECT * FROM metrics WHERE version_id = ? ORDER BY id", (vid,))
         ]
 
         regressions = [
@@ -475,14 +471,10 @@ class VersionRepository:
                 severity=r["severity"],
                 detail=r["detail"],
             )
-            for r in conn.execute(
-                "SELECT * FROM regressions WHERE version_id = ? ORDER BY id", (vid,)
-            )
+            for r in q("SELECT * FROM regressions WHERE version_id = ? ORDER BY id", (vid,))
         ]
 
-        analysis_row = conn.execute(
-            "SELECT * FROM analysis WHERE version_id = ?", (vid,)
-        ).fetchone()
+        analysis_row = self._db.query_one("SELECT * FROM analysis WHERE version_id = ?", (vid,))
         analysis = _analysis_from_row(analysis_row) if analysis_row else None
 
         artifacts = [
@@ -495,14 +487,12 @@ class VersionRepository:
                 sha256=r["sha256"],
                 created_at=_dt(r["created_at"]),
             )
-            for r in conn.execute(
-                "SELECT * FROM artifacts WHERE version_id = ? ORDER BY created_at", (vid,)
-            )
+            for r in q("SELECT * FROM artifacts WHERE version_id = ? ORDER BY created_at", (vid,))
         ]
 
         doc_flags = [
             DocFlag(doc_path=r["doc_path"], reason=r["reason"])
-            for r in conn.execute("SELECT * FROM doc_flags WHERE version_id = ?", (vid,))
+            for r in q("SELECT * FROM doc_flags WHERE version_id = ?", (vid,))
         ]
 
         checkpoint_links = self._checkpoints.for_version(vid)
@@ -553,7 +543,7 @@ class VersionRepository:
         if not query.strip():
             return []
         try:
-            rows = self._db.connection.execute(
+            rows = self._db.query(
                 """
                 SELECT s.version_id FROM version_search s
                 JOIN versions v ON v.version_id = s.version_id
@@ -561,17 +551,17 @@ class VersionRepository:
                 ORDER BY rank LIMIT ?
                 """,
                 (project_id, _fts_query(query), limit),
-            ).fetchall()
+            )
         except sqlite3.OperationalError:
             like = f"%{query}%"
-            rows = self._db.connection.execute(
+            rows = self._db.query(
                 """
                 SELECT version_id FROM versions
                 WHERE project_id = ? AND (intent LIKE ? OR agent LIKE ? OR git_commit LIKE ?)
                 ORDER BY version_number DESC LIMIT ?
                 """,
                 (project_id, like, like, like, limit),
-            ).fetchall()
+            )
         return [r["version_id"] for r in rows]
 
 

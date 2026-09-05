@@ -56,13 +56,11 @@ class ProjectRepository:
         self._db = db
 
     def get(self) -> Project | None:
-        row = self._db.connection.execute("SELECT * FROM projects LIMIT 1").fetchone()
+        row = self._db.query_one("SELECT * FROM projects LIMIT 1")
         return _project_from_row(row) if row else None
 
     def get_by_id(self, project_id: str) -> Project | None:
-        row = self._db.connection.execute(
-            "SELECT * FROM projects WHERE project_id = ?", (project_id,)
-        ).fetchone()
+        row = self._db.query_one("SELECT * FROM projects WHERE project_id = ?", (project_id,))
         return _project_from_row(row) if row else None
 
     def create(self, *, project_id: str, name: str, repo_path: str) -> Project:
@@ -155,9 +153,9 @@ class CheckpointRepository:
             )
 
     def get(self, checkpoint_id: str) -> CheckpointReference | None:
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT * FROM entire_checkpoints WHERE checkpoint_id = ?", (checkpoint_id,)
-        ).fetchone()
+        )
         return _checkpoint_from_row(row) if row else None
 
     def link(self, version_id: str, checkpoint_id: str, *, is_primary: bool) -> None:
@@ -169,7 +167,7 @@ class CheckpointRepository:
             )
 
     def for_version(self, version_id: str) -> list[tuple[CheckpointReference, bool]]:
-        rows = self._db.connection.execute(
+        rows = self._db.query(
             """
             SELECT c.*, vc.is_primary FROM entire_checkpoints c
             JOIN version_checkpoints vc ON vc.checkpoint_id = c.checkpoint_id
@@ -177,7 +175,7 @@ class CheckpointRepository:
             ORDER BY vc.is_primary DESC
             """,
             (version_id,),
-        ).fetchall()
+        )
         return [(_checkpoint_from_row(r), bool(r["is_primary"])) for r in rows]
 
 
@@ -248,21 +246,19 @@ class FeatureRepository:
         return feature
 
     def get_by_name(self, project_id: str, name: str) -> Feature | None:
-        row = self._db.connection.execute(
+        row = self._db.query_one(
             "SELECT * FROM features WHERE project_id = ? AND name = ?", (project_id, name)
-        ).fetchone()
+        )
         return _feature_from_row(row) if row else None
 
     def get(self, feature_id: str) -> Feature | None:
-        row = self._db.connection.execute(
-            "SELECT * FROM features WHERE feature_id = ?", (feature_id,)
-        ).fetchone()
+        row = self._db.query_one("SELECT * FROM features WHERE feature_id = ?", (feature_id,))
         return _feature_from_row(row) if row else None
 
     def list_all(self, project_id: str) -> list[Feature]:
-        rows = self._db.connection.execute(
+        rows = self._db.query(
             "SELECT * FROM features WHERE project_id = ? ORDER BY name", (project_id,)
-        ).fetchall()
+        )
         return [_feature_from_row(r) for r in rows]
 
 

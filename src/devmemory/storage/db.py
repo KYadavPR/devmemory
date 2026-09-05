@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import re
 import sqlite3
+import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -57,12 +58,26 @@ def discover_migrations(directory: Path = MIGRATIONS_DIR) -> list[Migration]:
 
 
 class Database:
-    """Owns one SQLite connection to a project's metadata database."""
+    """Access to a project's metadata database.
 
-    def __init__(self, path: Path, *, migrations_dir: Path = MIGRATIONS_DIR) -> None:
+    A single connection, shared. Every read and write goes through the helpers
+    below, each guarded by a re-entrant lock, so the web server (uvicorn's
+    threadpool) and the CLI both use it safely. ``check_same_thread=False`` is set
+    for the server; access is still fully serialized by ``_lock``.
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        migrations_dir: Path = MIGRATIONS_DIR,
+        check_same_thread: bool = True,
+    ) -> None:
         self.path = path
         self._migrations_dir = migrations_dir
+        self._check_same_thread = check_same_thread
         self._conn: sqlite3.Connection | None = None
+        self._lock = threading.RLock()
 
     # -- connection ------------------------------------------------------------
 
@@ -72,8 +87,9 @@ class Database:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             conn = sqlite3.connect(
                 self.path,
-                isolation_level=None,  # autocommit; we manage transactions explicitly
+                isolation_level=None,  # autocommit; transactions are explicit
                 timeout=30.0,
+                check_same_thread=self._check_same_thread,
             )
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA journal_mode = WAL")
@@ -83,9 +99,11 @@ class Database:
         return self._conn
 
     def close(self) -> None:
-        if self._conn is not None:
-            self._conn.close()
-            self._conn = None
+        with self._lock:
+            if self._conn is not None:
+                with contextlib.suppress(sqlite3.Error):
+                    self._conn.close()
+                self._conn = None
 
     def __enter__(self) -> Database:
         return self
@@ -93,23 +111,40 @@ class Database:
     def __exit__(self, *_exc: object) -> None:
         self.close()
 
+    # -- guarded access -----------------------------------------------------
+
+    def query(self, sql: str, params: tuple[object, ...] = ()) -> list[sqlite3.Row]:
+        with self._lock:
+            rows: list[sqlite3.Row] = self.connection.execute(sql, params).fetchall()
+            return rows
+
+    def query_one(self, sql: str, params: tuple[object, ...] = ()) -> sqlite3.Row | None:
+        with self._lock:
+            row: sqlite3.Row | None = self.connection.execute(sql, params).fetchone()
+            return row
+
+    def execute(self, sql: str, params: tuple[object, ...] = ()) -> None:
+        with self._lock:
+            self.connection.execute(sql, params)
+
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         """Run a block inside ``BEGIN``/``COMMIT``, rolling back on any exception."""
-        conn = self.connection
-        conn.execute("BEGIN")
-        try:
-            yield conn
-        except BaseException:
-            conn.execute("ROLLBACK")
-            raise
-        else:
-            conn.execute("COMMIT")
+        with self._lock:
+            conn = self.connection
+            conn.execute("BEGIN")
+            try:
+                yield conn
+            except BaseException:
+                conn.execute("ROLLBACK")
+                raise
+            else:
+                conn.execute("COMMIT")
 
     # -- migrations ----------------------------------------------------------
 
     def _ensure_migrations_table(self) -> None:
-        self.connection.execute(
+        self.execute(
             """
             CREATE TABLE IF NOT EXISTS schema_migrations (
                 version    INTEGER PRIMARY KEY,
@@ -121,8 +156,7 @@ class Database:
 
     def applied_versions(self) -> set[int]:
         self._ensure_migrations_table()
-        rows = self.connection.execute("SELECT version FROM schema_migrations").fetchall()
-        return {int(row["version"]) for row in rows}
+        return {int(row["version"]) for row in self.query("SELECT version FROM schema_migrations")}
 
     def migrate(self) -> list[Migration]:
         """Apply every pending migration atomically. Returns the ones applied, in order.
@@ -132,11 +166,16 @@ class Database:
         ``executescript`` is used (not per-statement ``execute``) so multi-statement
         DDL - triggers, ``CREATE VIRTUAL TABLE``, FTS shadow tables - works.
         """
-        self._ensure_migrations_table()
-        applied = self.applied_versions()
-        pending = [m for m in discover_migrations(self._migrations_dir) if m.version not in applied]
-        conn = self.connection
+        with self._lock:
+            self._ensure_migrations_table()
+            applied = self.applied_versions()
+            pending = [
+                m for m in discover_migrations(self._migrations_dir) if m.version not in applied
+            ]
+            conn = self.connection
+            return self._apply_pending(conn, pending)
 
+    def _apply_pending(self, conn: sqlite3.Connection, pending: list[Migration]) -> list[Migration]:
         for migration in pending:
             _log.info("migration.apply", version=migration.version, name=migration.name)
             applied_at = datetime.now(UTC).isoformat()

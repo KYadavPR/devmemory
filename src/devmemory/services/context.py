@@ -27,17 +27,20 @@ class ProjectContext:
     entire: EntireAdapter
 
     @classmethod
-    def load(cls, start: Path | str | None = None) -> ProjectContext:
+    def load(cls, start: Path | str | None = None, *, thread_safe: bool = False) -> ProjectContext:
         """Discover the project at or above ``start`` and open it.
 
-        Raises :class:`ProjectNotInitializedError` if there is no ``.devmemory/``.
+        ``thread_safe=True`` (the web server) opens the SQLite connection with
+        ``check_same_thread=False`` so it can be shared across uvicorn's
+        threadpool. Raises :class:`ProjectNotInitializedError` if there is no
+        ``.devmemory/``.
         """
         start_path = Path(start) if start is not None else None
         paths = find_project_paths(start_path)
         if paths is None:
             raise ProjectNotInitializedError
         config = DevMemoryConfig.load(paths)
-        return cls._build(paths, config)
+        return cls._build(paths, config, thread_safe=thread_safe)
 
     @classmethod
     def for_paths(cls, paths: ProjectPaths, config: DevMemoryConfig) -> ProjectContext:
@@ -45,8 +48,10 @@ class ProjectContext:
         return cls._build(paths, config)
 
     @classmethod
-    def _build(cls, paths: ProjectPaths, config: DevMemoryConfig) -> ProjectContext:
-        db = Database(paths.db)
+    def _build(
+        cls, paths: ProjectPaths, config: DevMemoryConfig, *, thread_safe: bool = False
+    ) -> ProjectContext:
+        db = Database(paths.db, check_same_thread=not thread_safe)
         db.migrate()
         git = GitAdapter(paths.repo_root, git_binary=None)
         entire = EntireAdapter(
