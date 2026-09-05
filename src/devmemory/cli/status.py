@@ -7,7 +7,6 @@ from typing import Annotated
 
 import typer
 
-from devmemory.adapters.entire import EntireAdapter
 from devmemory.cli._render import check, console, kv_table, warn
 from devmemory.domain.models import EntireStatus
 from devmemory.services.context import ProjectContext
@@ -19,12 +18,7 @@ def status_command(
 ) -> None:
     """Show the current project, git HEAD, working-tree cleanliness, and Entire state."""
     with ProjectContext.load() as ctx:
-        entire = EntireAdapter(
-            ctx.paths.repo_root,
-            binary=ctx.config.entire.binary,
-            repo=ctx.config.entire.repo,
-        ).probe()
-        report = project_status(ctx, entire_probe=entire)
+        report = project_status(ctx, entire_probe=ctx.entire.probe())
 
     if as_json:
         console.print_json(json.dumps(report.model_dump(mode="json")))

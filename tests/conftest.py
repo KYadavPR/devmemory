@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -66,6 +67,110 @@ class TmpGitRepo:
 
     def rev(self, ref: str = "HEAD") -> str:
         return self.git("rev-parse", ref).stdout.strip()
+
+    def _hash_object(self, content: str) -> str:
+        # bytes I/O: text mode would translate \n -> \r\n into git's stdin on Windows.
+        proc = subprocess.run(
+            ["git", "hash-object", "-w", "--stdin"],
+            cwd=self.path,
+            input=content.encode("utf-8"),
+            capture_output=True,
+            check=True,
+        )
+        return proc.stdout.decode().strip()
+
+    def _mktree(self, entries: list[tuple[str, str, str, str]]) -> str:
+        """entries: (mode, type, sha, name)."""
+        payload = "".join(f"{m} {t} {s}\t{n}\n" for m, t, s, n in entries)
+        proc = subprocess.run(
+            ["git", "mktree"],
+            cwd=self.path,
+            input=payload.encode("utf-8"),
+            capture_output=True,
+            check=True,
+        )
+        return proc.stdout.decode().strip()
+
+    def make_entire_checkpoint(
+        self,
+        checkpoint_id: str,
+        *,
+        intent: str,
+        agent: str = "Claude Code",
+        model: str = "claude-sonnet-5",
+        commit_sha: str | None = None,
+        strategy: str = "session",
+        imported: bool = False,
+    ) -> str:
+        """Build a realistic ``refs/entire/checkpoints/<shard>/<id>`` ref by hand."""
+        session_meta = {
+            "cli_version": "0.10.5",
+            "checkpoint_id": checkpoint_id,
+            "session_id": f"sess-{checkpoint_id[:8]}",
+            "strategy": strategy,
+            "created_at": "2026-09-06T01:15:00Z",
+            "commit_sha": commit_sha,
+            "agent": agent,
+            "model": model,
+            "kind": "imported" if imported else "live",
+            "token_usage": {
+                "input_tokens": 100,
+                "output_tokens": 2000,
+                "cache_read_tokens": 5000,
+                "cache_creation_tokens": 800,
+                "api_call_count": 12,
+            },
+        }
+        root_meta = {
+            "cli_version": "0.10.5",
+            "checkpoint_id": checkpoint_id,
+            "strategy": strategy,
+            "commit_sha": commit_sha,
+            "checkpoints_count": 1,
+            "files_touched": None,
+            "sessions": [
+                {
+                    "metadata": "/0/metadata.json",
+                    "transcript": "/0/full.jsonl",
+                    "compact_transcript": "/0/transcript.jsonl",
+                    "prompt": "/0/prompt.txt",
+                }
+            ],
+            "token_usage": session_meta["token_usage"],
+            "imported": imported,
+        }
+        b_session_meta = self._hash_object(json.dumps(session_meta, indent=2))
+        b_prompt = self._hash_object(intent)
+        b_transcript = self._hash_object('{"role":"user","content":"' + intent[:20] + '"}\n')
+        b_full = self._hash_object('{"type":"session"}\n')
+        b_hash = self._hash_object("deadbeef\n")
+        sub_tree = self._mktree(
+            [
+                ("100644", "blob", b_session_meta, "metadata.json"),
+                ("100644", "blob", b_prompt, "prompt.txt"),
+                ("100644", "blob", b_transcript, "transcript.jsonl"),
+                ("100644", "blob", b_full, "full.jsonl"),
+                ("100644", "blob", b_hash, "content_hash.txt"),
+            ]
+        )
+        b_root_meta = self._hash_object(json.dumps(root_meta, indent=2))
+        root_tree = self._mktree(
+            [
+                ("100644", "blob", b_root_meta, "metadata.json"),
+                ("040000", "tree", sub_tree, "0"),
+            ]
+        )
+        commit = subprocess.run(
+            ["git", "commit-tree", root_tree, "-m", f"checkpoint {checkpoint_id}"],
+            cwd=self.path,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        shard = checkpoint_id[-2:]
+        ref = f"refs/entire/checkpoints/{shard}/{checkpoint_id}"
+        self.git("update-ref", ref, commit)
+        return ref
 
 
 @pytest.fixture

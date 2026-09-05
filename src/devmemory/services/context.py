@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
 
+from devmemory.adapters.entire import EntireAdapter
 from devmemory.adapters.git import GitAdapter
 from devmemory.config import DevMemoryConfig
 from devmemory.domain.errors import ProjectNotInitializedError
@@ -23,6 +24,7 @@ class ProjectContext:
     config: DevMemoryConfig
     db: Database
     git: GitAdapter
+    entire: EntireAdapter
 
     @classmethod
     def load(cls, start: Path | str | None = None) -> ProjectContext:
@@ -35,18 +37,25 @@ class ProjectContext:
         if paths is None:
             raise ProjectNotInitializedError
         config = DevMemoryConfig.load(paths)
-        db = Database(paths.db)
-        db.migrate()
-        git = GitAdapter(paths.repo_root, git_binary=None)
-        return cls(paths=paths, config=config, db=db, git=git)
+        return cls._build(paths, config)
 
     @classmethod
     def for_paths(cls, paths: ProjectPaths, config: DevMemoryConfig) -> ProjectContext:
         """Build a context from already-resolved paths/config (used during ``init``)."""
+        return cls._build(paths, config)
+
+    @classmethod
+    def _build(cls, paths: ProjectPaths, config: DevMemoryConfig) -> ProjectContext:
         db = Database(paths.db)
         db.migrate()
         git = GitAdapter(paths.repo_root, git_binary=None)
-        return cls(paths=paths, config=config, db=db, git=git)
+        entire = EntireAdapter(
+            paths.repo_root,
+            binary=config.entire.binary,
+            repo=config.entire.repo,
+            git=git,
+        )
+        return cls(paths=paths, config=config, db=db, git=git, entire=entire)
 
     def close(self) -> None:
         self.db.close()

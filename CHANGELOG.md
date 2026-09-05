@@ -6,6 +6,22 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 2: Entire checkpoint resolution
+
+- `EntireAdapter.resolve_for_commit()` implements the association ladder:
+  `Entire-Checkpoint` git trailer (confidence 1.0) → `entire checkpoint explain
+  --commit --json` for session metadata → direct read of the
+  `refs/entire/checkpoints/<shard>/<id>` git object tree (offline; supplies the
+  intent from `<idx>/prompt.txt`, which the CLI envelope never includes) →
+  time-proximity heuristic against `entire checkpoint list --json` (confidence
+  ≤ 0.5, marked uncertain) → `None`. Checkpoint data is never fabricated.
+- `EntireAdapter.get_checkpoint()`, `list_checkpoints()`, `transcript()`.
+- Normalized `CheckpointReference` carries the association method + confidence,
+  the resolving git ref, per-session metadata, and merged token usage.
+- `ProjectContext` now wires the Entire adapter (with the git adapter injected).
+- Integration tests run against the real installed Entire CLI when present, as an
+  early-warning signal for `--json` shape drift.
+
 ### Added — Phase 1: `devmemory init` + Git adapter
 
 - `GitAdapter` (`devmemory.adapters.git`): subprocess-based, no GitPython. Repo
