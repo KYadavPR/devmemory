@@ -7,22 +7,25 @@ hint + exit code.
 
 from __future__ import annotations
 
+import os
 import platform
 import shutil
 import subprocess
+from typing import Annotated
 
 import typer
-from rich.console import Console
 from rich.table import Table
 
 from devmemory.__about__ import __version__
 from devmemory.cli._errors import handle_errors
+from devmemory.cli._render import console, err_console
+from devmemory.cli.checkpoint import checkpoint_command
+from devmemory.cli.history import history_command
 from devmemory.cli.init import init_command
+from devmemory.cli.show import show_command
 from devmemory.cli.status import status_command
 from devmemory.domain.errors import DevMemoryError
-
-console = Console()
-err_console = Console(stderr=True)
+from devmemory.logging import configure_logging
 
 app = typer.Typer(
     name="devmemory",
@@ -48,16 +51,23 @@ def _print_version(value: bool) -> None:
 
 @app.callback()
 def _main(
-    _version: bool = typer.Option(
-        False,
-        "--version",
-        "-V",
-        callback=_print_version,
-        is_eager=True,
-        help="Show the DevMemory version and exit.",
-    ),
+    _version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            "-V",
+            callback=_print_version,
+            is_eager=True,
+            help="Show the DevMemory version and exit.",
+        ),
+    ] = False,
+    verbose: Annotated[
+        bool, typer.Option("--verbose", "-v", help="Show info-level diagnostic logs.")
+    ] = False,
 ) -> None:
     """DevMemory command-line interface."""
+    level = os.environ.get("DEVMEMORY_LOG_LEVEL") or ("INFO" if verbose else "WARNING")
+    configure_logging(level=level, json_logs=False)
 
 
 def _tool_version(executable: str, args: list[str]) -> str:
@@ -94,6 +104,9 @@ def version() -> None:
 
 app.command(name="init")(handle_errors(init_command))
 app.command(name="status")(handle_errors(status_command))
+app.command(name="checkpoint")(handle_errors(checkpoint_command))
+app.command(name="history")(handle_errors(history_command))
+app.command(name="show")(handle_errors(show_command))
 
 
 def main() -> None:

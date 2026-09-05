@@ -25,24 +25,39 @@ def status_command(
         return
 
     head = report.head_sha[:12] if report.head_sha else "(no commits yet)"
-    console.print(
-        kv_table(
-            [
-                ("project", f"{report.project.name}  [dim]({report.project.project_id})[/dim]"),
-                ("branch", report.branch or "[dim]detached[/dim]"),
-                ("HEAD", f"{head}  {report.head_subject or ''}".rstrip()),
-                ("working tree", check(report.working_tree_clean)),
-                ("versions", str(report.version_count)),
-                (
-                    "current version",
-                    f"V{report.current_version_id}" if report.current_version_id else "-",
-                ),
-                ("entire", _entire_summary(report.entire)),
-            ]
+    rows: list[tuple[str, object]] = [
+        ("project", f"{report.project.name}  [dim]({report.project.project_id})[/dim]"),
+        ("branch", report.branch or "[dim]detached[/dim]"),
+        ("HEAD", f"{head}  {report.head_subject or ''}".rstrip()),
+        ("working tree", check(report.working_tree_clean)),
+        ("versions", str(report.version_count)),
+    ]
+    if report.latest_version_id:
+        rows.append(
+            (
+                "latest",
+                f"{report.latest_version_id.upper()}  {report.latest_status}"
+                + (f"  [dim]{report.latest_intent}[/dim]" if report.latest_intent else ""),
+            )
         )
-    )
+    if report.latest_metrics:
+        rows.append(
+            (
+                "metrics",
+                "  ".join(f"{k}={v}" for k, v in report.latest_metrics.items() if v is not None),
+            )
+        )
+    if report.open_features:
+        rows.append(("in progress", ", ".join(report.open_features)))
+    if report.last_regression_id:
+        rows.append(("last regression", report.last_regression_id.upper()))
+    rows.append(("entire", _entire_summary(report.entire)))
+    console.print(kv_table(rows))
+
     if not report.working_tree_clean:
         warn("uncommitted changes present")
+    if report.head_sha and not report.head_has_version:
+        warn("HEAD is not recorded yet - run `devmemory checkpoint`")
 
 
 def _entire_summary(status: EntireStatus) -> str:

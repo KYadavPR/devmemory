@@ -6,6 +6,30 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 4: `devmemory checkpoint` end-to-end
+
+- The checkpoint pipeline (`devmemory.pipeline`): an ordered, individually-timed
+  set of stages — verify repo, resolve commit, check working tree, idempotency,
+  resolve Entire checkpoint, collect changes, environment, detect feature,
+  collect tests, determine status, build event, persist — each recorded in a
+  `RunLog` written to `.devmemory/runs/<run_id>.json`. Cloud/optional steps never
+  fail the run.
+- Missing-checkpoint policy: `checkpoint` refuses without an Entire checkpoint
+  unless `--allow-no-entire`; uncertain (heuristic) associations are surfaced as
+  warnings. Dirty working tree is warned, not blocked.
+- `feature_detect`: explicit flag → conventional-commit scope → intent keywords.
+- `status_rules.derive_status`: explicit override → errors → regressions → test
+  outcome → needs-review.
+- CLI: `devmemory checkpoint` (`--intent`, `--feature`, `--agent`, `--status`,
+  `--tests-passed/-failed`, `-m name=before:after`, `-e error`,
+  `--allow-no-entire`, `--force`, `--json`), `devmemory history` (timeline
+  table), `devmemory show <v7|7|sha> [--diff] [--json]` (full record with metric
+  direction, file marks, analysis panel, syntax-highlighted diff).
+- `devmemory status` now reports version count, latest version/status/metrics,
+  in-progress features, last regression, and whether HEAD is recorded.
+- Global `-v/--verbose`; CLI logs default to WARNING. Windows console output is
+  forced to UTF-8. structlog uses a lazy stderr factory (survives pytest capture).
+
 ### Added — Phase 3: normalized event + version registry + persistence
 
 - Migration `0002_versions`: the full schema — `versions` (with version number,

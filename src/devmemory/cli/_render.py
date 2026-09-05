@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import sys
 from collections.abc import Iterable
 
 from rich.console import Console
@@ -10,8 +12,20 @@ from rich.text import Text
 
 from devmemory.domain.enums import VersionStatus
 
-console = Console()
-err_console = Console(stderr=True)
+
+def _force_utf8() -> None:
+    """Windows consoles default to cp1252; make our Unicode output survive pipes."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            with contextlib.suppress(ValueError, OSError):
+                reconfigure(encoding="utf-8", errors="replace")
+
+
+_force_utf8()
+
+console = Console(soft_wrap=False)
+err_console = Console(stderr=True, soft_wrap=False)
 
 _STATUS_STYLE: dict[str, str] = {
     VersionStatus.SUCCESS: "bold green",

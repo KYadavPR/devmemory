@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from devmemory.adapters.git import GitAdapter
 from devmemory.config import DevMemoryConfig
+from devmemory.domain.enums import FeatureStatus, VersionStatus
 from devmemory.domain.errors import (
     GitRepositoryNotFoundError,
     ProjectAlreadyInitializedError,
@@ -18,7 +19,8 @@ from devmemory.environment import collect_environment
 from devmemory.logging import get_logger
 from devmemory.paths import DEVMEMORY_DIRNAME, ProjectPaths
 from devmemory.services.context import ProjectContext
-from devmemory.storage.repositories import ProjectRepository
+from devmemory.storage.repositories import FeatureRepository, ProjectRepository
+from devmemory.storage.versions import VersionRepository
 
 _log = get_logger(__name__)
 
@@ -49,7 +51,13 @@ class ProjectStatusReport(BaseModel):
     working_tree_clean: bool
     entire: EntireStatus
     version_count: int = 0
-    current_version_id: int | None = None
+    latest_version_id: str | None = None
+    latest_status: str | None = None
+    latest_intent: str | None = None
+    head_has_version: bool = False
+    last_regression_id: str | None = None
+    open_features: list[str] = []
+    latest_metrics: dict[str, float | None] = {}
 
 
 def init_project(
@@ -128,8 +136,27 @@ def project_status(
     if project is None:  # pragma: no cover - context load implies a project row
         raise ProjectAlreadyInitializedError("No project row found; re-run `devmemory init`.")
 
+    versions = VersionRepository(ctx.db)
+    features = FeatureRepository(ctx.db)
+
     head = ctx.git.head_sha()
     subject = ctx.git.commit(head).subject if head else None
+
+    latest = versions.latest(project.project_id)
+    head_version = versions.find_by_commit(project.project_id, head) if head else None
+    last_regression = next(
+        (
+            v.version_id
+            for v in versions.page(project.project_id, limit=200, ascending=False)
+            if v.status is VersionStatus.REGRESSION
+        ),
+        None,
+    )
+    open_features = [
+        f.name
+        for f in features.list_all(project.project_id)
+        if f.status not in (FeatureStatus.COMPLETE, FeatureStatus.NOT_STARTED)
+    ]
 
     return ProjectStatusReport(
         project=project,
@@ -138,8 +165,14 @@ def project_status(
         head_subject=subject,
         working_tree_clean=not ctx.git.is_dirty(),
         entire=entire_probe or EntireStatus(),
-        version_count=0,
-        current_version_id=project.current_version_id,
+        version_count=versions.count(project.project_id),
+        latest_version_id=latest.version_id if latest else None,
+        latest_status=latest.status.value if latest else None,
+        latest_intent=latest.intent if latest else None,
+        head_has_version=head_version is not None,
+        last_regression_id=last_regression,
+        open_features=open_features,
+        latest_metrics={m.name: m.after for m in latest.metrics} if latest else {},
     )
 
 

@@ -96,12 +96,6 @@ def configure_logging(*, level: str = "INFO", json_logs: bool | None = None) -> 
         json_logs = not sys.stderr.isatty()
 
     numeric_level = getattr(logging, level.upper(), logging.INFO)
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stderr,
-        level=numeric_level,
-        force=True,
-    )
 
     shared_processors: list[structlog.types.Processor] = [
         structlog.contextvars.merge_contextvars,
@@ -120,10 +114,16 @@ def configure_logging(*, level: str = "INFO", json_logs: bool | None = None) -> 
     structlog.configure(
         processors=[*shared_processors, renderer],
         wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
-        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
-        cache_logger_on_first_use=True,
+        # Resolve sys.stderr lazily per log line - pytest's captured streams are
+        # swapped and closed between tests, so a cached stream reference breaks.
+        logger_factory=_lazy_stderr_factory,
+        cache_logger_on_first_use=False,
     )
     _configured = True
+
+
+def _lazy_stderr_factory(*_args: object) -> structlog.PrintLogger:
+    return structlog.PrintLogger(file=sys.stderr)
 
 
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
