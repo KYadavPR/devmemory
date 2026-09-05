@@ -10,7 +10,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from devmemory.domain.enums import AssociationMethod, ChangeType
+from devmemory.domain.enums import (
+    AssociationMethod,
+    ChangeType,
+    FeatureStatus,
+    MetricDirection,
+    VersionStatus,
+)
 
 
 class _Model(BaseModel):
@@ -210,15 +216,237 @@ class EnvironmentInfo(_Model):
     package_manager: str | None = None
 
 
+# --- results (facts) ------------------------------------------------------------------
+
+
+class TestOutcome(_Model):
+    """Outcome of running the configured test command. Facts, not judgement."""
+
+    __test__ = False  # this is a data model, not a pytest test case
+
+    command: str | None = None
+    framework: str | None = None
+    total: int = 0
+    passed: int = 0
+    failed: int = 0
+    skipped: int = 0
+    errors: int = 0
+    exit_code: int | None = None
+    duration_seconds: float | None = None
+    failing: list[str] = Field(default_factory=list)
+    output: str | None = None
+
+    @property
+    def ran(self) -> bool:
+        return self.command is not None
+
+    @property
+    def all_passed(self) -> bool:
+        return self.ran and self.failed == 0 and self.errors == 0 and self.exit_code in (0, None)
+
+    @property
+    def pass_rate(self) -> float | None:
+        return self.passed / self.total if self.total else None
+
+
+class Metric(_Model):
+    """One measurable project metric, with an explicit better-direction."""
+
+    name: str
+    before: float | None = None
+    after: float | None = None
+    unit: str | None = None
+    direction: MetricDirection = MetricDirection.HIGHER_IS_BETTER
+    metadata: dict[str, object] = Field(default_factory=dict)
+
+    @property
+    def delta(self) -> float | None:
+        if self.before is None or self.after is None:
+            return None
+        return self.after - self.before
+
+    @property
+    def percent_change(self) -> float | None:
+        if self.before is None or self.after is None or self.before == 0:
+            return None
+        return (self.after - self.before) / abs(self.before) * 100.0
+
+    @property
+    def is_improvement(self) -> bool:
+        delta = self.delta
+        if delta is None or delta == 0 or self.direction is MetricDirection.NEUTRAL:
+            return False
+        return delta > 0 if self.direction is MetricDirection.HIGHER_IS_BETTER else delta < 0
+
+    @property
+    def is_worse(self) -> bool:
+        delta = self.delta
+        if delta is None or delta == 0 or self.direction is MetricDirection.NEUTRAL:
+            return False
+        return delta < 0 if self.direction is MetricDirection.HIGHER_IS_BETTER else delta > 0
+
+
+class Regression(_Model):
+    version_id: str | None = None
+    kind: str  # 'metric' | 'test'
+    metric: str | None = None
+    before: float | None = None
+    after: float | None = None
+    change_percent: float | None = None
+    severity: str = "MEDIUM"  # LOW | MEDIUM | HIGH
+    detail: str | None = None
+
+
+class Analysis(_Model):
+    """AI (or rule-based) interpretation. Never overwrites facts."""
+
+    version_id: str | None = None
+    summary: str = ""
+    reasoning: str | None = None
+    recommendation: str | None = None
+    warnings: list[str] = Field(default_factory=list)
+    risk: str | None = None
+    provider: str = "rules"
+    model: str | None = None
+    generated_at: datetime | None = None
+
+
+class Artifact(_Model):
+    artifact_id: str
+    version_id: str
+    path: str
+    type: str = "project_snapshot"
+    size_bytes: int | None = None
+    sha256: str | None = None
+    created_at: datetime | None = None
+
+
+class DocFlag(_Model):
+    doc_path: str
+    reason: str | None = None
+
+
+class Feature(_Model):
+    feature_id: str
+    project_id: str
+    name: str
+    status: FeatureStatus = FeatureStatus.IN_PROGRESS
+    derived_from: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+# --- the normalized bridge --------------------------------------------------------
+
+
+class DevelopmentEvent(_Model):
+    """Everything collected about one development change, normalized.
+
+    Adapters fill this; the version registry persists it. It is stored verbatim on
+    the version (``source_event_json``) for replay and debugging.
+    """
+
+    project_id: str
+    source: str = "devmemory"
+    occurred_at: datetime
+    run_id: str | None = None
+
+    intent: str | None = None
+    agent: str | None = None
+    model: str | None = None
+    feature: str | None = None
+    feature_derived_from: str | None = None
+
+    commit: CommitInfo
+    parent_commit: str | None = None
+    branch: str | None = None
+    changed_files: list[ChangedFile] = Field(default_factory=list)
+
+    checkpoint: CheckpointReference | None = None
+
+    status: VersionStatus | None = None
+    tests: TestOutcome | None = None
+    metrics: list[Metric] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    environment: EnvironmentInfo | None = None
+
+    @property
+    def diff_stat(self) -> DiffStat:
+        return DiffStat.from_files(self.changed_files)
+
+
+# --- the record ----------------------------------------------------------------
+
+
+class DevelopmentVersion(_Model):
+    """The persisted development record - the join of everything above."""
+
+    version_id: str
+    version_number: int
+    project_id: str
+
+    intent: str | None = None
+    agent: str | None = None
+    model: str | None = None
+
+    git_commit: str
+    parent_commit: str | None = None
+    branch: str | None = None
+
+    feature_id: str | None = None
+    status: VersionStatus = VersionStatus.NEEDS_REVIEW
+
+    files_changed: int = 0
+    lines_added: int = 0
+    lines_removed: int = 0
+
+    changed_files: list[ChangedFile] = Field(default_factory=list)
+    primary_checkpoint: CheckpointReference | None = None
+    checkpoint_ids: list[str] = Field(default_factory=list)
+
+    entire_association_method: AssociationMethod = AssociationMethod.NONE
+    entire_association_confidence: float = 0.0
+
+    tests: TestOutcome | None = None
+    metrics: list[Metric] = Field(default_factory=list)
+    regressions: list[Regression] = Field(default_factory=list)
+    analysis: Analysis | None = None
+    artifacts: list[Artifact] = Field(default_factory=list)
+    doc_flags: list[DocFlag] = Field(default_factory=list)
+
+    environment: EnvironmentInfo | None = None
+    run_id: str | None = None
+
+    created_at: datetime
+    committed_at: datetime | None = None
+
+    @property
+    def net_lines(self) -> int:
+        return self.lines_added - self.lines_removed
+
+    @property
+    def has_uncertain_checkpoint(self) -> bool:
+        return bool(self.primary_checkpoint and self.primary_checkpoint.is_uncertain)
+
+
 __all__ = [
+    "Analysis",
+    "Artifact",
     "ChangedFile",
     "CheckpointReference",
     "CheckpointSession",
     "CommitInfo",
+    "DevelopmentEvent",
+    "DevelopmentVersion",
     "DiffStat",
+    "DocFlag",
     "EntireStatus",
     "EnvironmentInfo",
+    "Feature",
+    "Metric",
     "Project",
+    "Regression",
+    "TestOutcome",
     "TokenUsage",
     "WorkingTreeState",
 ]

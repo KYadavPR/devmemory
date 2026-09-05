@@ -6,6 +6,28 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 3: normalized event + version registry + persistence
+
+- Migration `0002_versions`: the full schema — `versions` (with version number,
+  association method/confidence, environment + source-event JSON, run id, distinct
+  recorded/committed times), `changed_files`, `entire_checkpoints`,
+  `version_checkpoints` (many-to-many), `features`, `tests`, `metrics`,
+  `regressions`, `analysis` (1:1, kept separate from facts), `artifacts`,
+  `doc_flags`, `events`, plus an FTS5 `version_search` table and indexes.
+- Domain: `DevelopmentEvent` (the normalized bridge adapters fill), `Metric`
+  (direction-aware, with delta / percent-change / improvement helpers),
+  `TestOutcome`, `Regression`, `Analysis`, `Artifact`, `DocFlag`, `Feature`, and
+  the persisted `DevelopmentVersion` record joining all of it.
+- `VersionRepository`: numbering, idempotent lookup by commit, `create` /
+  `replace` (for `--force`) writing every child table in one transaction, full
+  hydration, `previous_relevant` (for regression detection), and FTS-backed
+  `search_ids` with a `LIKE` fallback.
+- `CheckpointRepository` (upsert + version linking), `FeatureRepository`.
+- Services (`devmemory.services.versions`): `create_version_from_event`
+  (idempotent; `--force` re-records in place), `get_version` (resolves
+  `v7`/`7`/sha-prefix), `list_versions`, `version_diff` (real git diff + metric
+  and test deltas), `search_versions`. Every create writes an audit `events` row.
+
 ### Added — Phase 2: Entire checkpoint resolution
 
 - `EntireAdapter.resolve_for_commit()` implements the association ladder:

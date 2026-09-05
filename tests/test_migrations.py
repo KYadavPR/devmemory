@@ -16,9 +16,11 @@ def test_shipped_migrations_are_sequential() -> None:
 
 
 def test_migrate_applies_and_is_idempotent(database: Database) -> None:
+    all_migrations = discover_migrations()
     applied = database.migrate()
-    assert [m.name for m in applied] == ["init"]
-    assert database.schema_version() == 1
+    assert [m.name for m in applied] == [m.name for m in all_migrations]
+    assert applied[0].name == "init"
+    assert database.schema_version() == len(all_migrations)
 
     tables = {
         row["name"]
@@ -26,19 +28,25 @@ def test_migrate_applies_and_is_idempotent(database: Database) -> None:
             "SELECT name FROM sqlite_master WHERE type = 'table'"
         )
     }
-    assert {"projects", "schema_migrations"} <= tables
+    assert {"projects", "versions", "schema_migrations"} <= tables
 
     assert database.migrate() == []  # nothing pending the second time
 
 
-def test_partial_history_only_applies_the_rest(database: Database) -> None:
-    database._ensure_migrations_table()  # exercising internals deliberately
-    database.connection.execute(
-        "INSERT INTO schema_migrations (version, name, applied_at) VALUES (1, 'init', '2026-01-01')"
+def test_runner_skips_already_recorded_migrations(tmp_path: Path) -> None:
+    migrations = tmp_path / "m"
+    migrations.mkdir()
+    (migrations / "0001_a.sql").write_text("CREATE TABLE a (x);", encoding="utf-8")
+    (migrations / "0002_b.sql").write_text("CREATE TABLE b (x);", encoding="utf-8")
+
+    db = Database(tmp_path / "db.sqlite", migrations_dir=migrations)
+    db._ensure_migrations_table()
+    db.connection.execute(
+        "INSERT INTO schema_migrations (version, name, applied_at) VALUES (1, 'a', '2026-01-01')"
     )
-    # Pretend 0001 ran elsewhere; the runner must not re-run it (which would fail
-    # on CREATE TABLE projects) and must report nothing pending.
-    assert database.migrate() == []
+    applied = db.migrate()
+    assert [m.name for m in applied] == ["b"]  # 0001 skipped, 0002 applied
+    db.close()
 
 
 def test_bad_filename_is_rejected(tmp_path: Path) -> None:
@@ -78,7 +86,7 @@ def test_close_is_reentrant(database: Database) -> None:
     database.migrate()
     database.close()
     database.close()  # no error
-    assert database.schema_version() == 1  # reconnects transparently
+    assert database.schema_version() == len(discover_migrations())  # reconnects transparently
 
 
 def test_failing_migration_rolls_back(tmp_path: Path) -> None:
