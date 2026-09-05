@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devmemory"
+version = "0.1.0"
+description = "Development-memory and version-intelligence for AI-assisted software development"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "DevMemory Team"}
+]
+keywords = ["ai", "development", "memory", "version-control", "entire", "databricks"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Version Control",
+]
+
+dependencies = [
+    "click>=8.1",
+    "gitpython>=3.1",
+    "fastapi>=0.104",
+    "uvicorn>=0.24",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+databricks = [
+    "databricks-sql-connector>=3.0",
+]
+mcp = [
+    "mcp[cli]>=1.0",
+]
+all = [
+    "devmemory[databricks,mcp]",
+]
+
+[project.scripts]
+devmemory = "devmemory.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["devmemory*"]
+
+[tool.setuptools.package-data]
+"devmemory.web" = ["static/**/*"]

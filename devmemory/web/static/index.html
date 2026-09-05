@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevMemory — Development-Memory & Version-Intelligence Platform</title>
+  <meta name="description" content="Development memory and version intelligence for AI-assisted software development, bridging Entire Checkpoints, Git, and Databricks.">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="nav-container">
+      <div class="brand-section">
+        <div class="logo-badge">DM</div>
+        <div>
+          <div class="brand-title">DevMemory <span class="brand-tag">AI Intelligence</span></div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">Entire · Git · Analytics · Agent Memory</div>
+        </div>
+      </div>
+
+      <div class="nav-tabs">
+        <button class="nav-btn active" data-tab="overview">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Overview
+        </button>
+        <button class="nav-btn" data-tab="timeline">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Timeline
+        </button>
+        <button class="nav-btn" data-tab="detail">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Version Detail
+        </button>
+        <button class="nav-btn" data-tab="compare">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Compare
+        </button>
+        <button class="nav-btn" data-tab="features">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          Features
+        </button>
+        <button class="nav-btn" data-tab="memory">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"></path><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+          AI Memory
+        </button>
+        <button class="nav-btn" data-tab="analytics">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+          Databricks
+        </button>
+      </div>
+
+      <div class="header-actions">
+        <div class="badge-outline">
+          <span class="dot"></span>
+          <span id="headerProjectName">Loading...</span>
+        </div>
+        <button class="btn-secondary" id="btnRefresh" title="Refresh data">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- 1. OVERVIEW TAB -->
+    <section id="tab-overview" class="tab-content active">
+      <div class="stats-grid">
+        <div class="stat-card glass">
+          <div class="stat-header">
+            <span class="stat-label">Current Version</span>
+            <div class="stat-icon">v</div>
+          </div>
+          <div class="stat-value" id="statCurrentVersion">0</div>
+          <div class="stat-subtext" id="statLatestStatus">-</div>
+        </div>
+
+        <div class="stat-card glass">
+          <div class="stat-header">
+            <span class="stat-label">Total Iterations</span>
+            <div class="stat-icon">#</div>
+          </div>
+          <div class="stat-value" id="statTotalVersions">0</div>
+          <div class="stat-subtext">Recorded development steps</div>
+        </div>
+
+        <div class="stat-card glass">
+          <div class="stat-header">
+            <span class="stat-label">Test Health</span>
+            <div class="stat-icon">%</div>
+          </div>
+          <div class="stat-value" id="statTestPassRate">100%</div>
+          <div class="stat-subtext" id="statTestCounts">0 passed · 0 failed</div>
+        </div>
+
+        <div class="stat-card glass">
+          <div class="stat-header">
+            <span class="stat-label">Features Tracked</span>
+            <div class="stat-icon">★</div>
+          </div>
+          <div class="stat-value" id="statFeatureCount">0</div>
+          <div class="stat-subtext" id="statFeatureSummary">0 complete</div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Bar -->
+      <div class="glass panel-section" style="margin-bottom: 2rem;">
+        <div class="panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          Active Baseline Metrics
+        </div>
+        <div id="overviewMetricsContainer" style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+          <span style="color: var(--text-muted); font-size: 0.88rem;">No metrics recorded yet.</span>
+        </div>
+      </div>
+
+      <!-- Recent Development Steps -->
+      <div class="panel-section glass">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+          <div class="panel-title" style="margin-bottom: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Recent Iterations
+          </div>
+          <button class="btn-action" onclick="switchTab('timeline')">View Full Timeline →</button>
+        </div>
+        <div id="recentVersionsList" class="timeline-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. TIMELINE TAB -->
+    <section id="tab-timeline" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem;">Development Evolution Timeline</h2>
+          <p style="font-size: 0.88rem; color: var(--text-secondary);">Trace how Entire checkpoints, AI intents, and test metrics evolved over time.</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-secondary filter-btn active" data-filter="ALL">All</button>
+          <button class="btn-secondary filter-btn" data-filter="SUCCESS">Success</button>
+          <button class="btn-secondary filter-btn" data-filter="REGRESSION">Regressions</button>
+          <button class="btn-secondary filter-btn" data-filter="ERROR">Errors</button>
+        </div>
+      </div>
+
+      <div id="timelineList" class="timeline-container">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- 3. VERSION DETAIL TAB -->
+    <section id="tab-detail" class="tab-content">
+      <div class="detail-grid">
+        <!-- Sidebar Metadata -->
+        <div>
+          <div class="glass panel-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <span id="detailVersionId" class="v-id-tag">v-</span>
+              <span id="detailStatusBadge" class="badge-status">STATUS</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.85rem;">
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Feature Area</div>
+                <div id="detailFeature" style="font-weight: 600; color: var(--text-primary);">-</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">AI Agent / Author</div>
+                <div id="detailAgent" style="color: var(--accent-cyan); font-weight: 500;">-</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Git Commit</div>
+                <div id="detailCommit" class="mono" style="color: #cbd5e1;">-</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Entire Checkpoint</div>
+                <div id="detailCheckpoint" class="mono" style="color: var(--accent-purple); word-break: break-all;">-</div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Timestamp</div>
+                <div id="detailTimestamp" style="color: var(--text-secondary);">-</div>
+              </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border-subtle); margin: 1.25rem 0;">
+
+            <button class="btn-action" id="btnDetailRestore" style="width: 100%; justify-content: center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 2v6h6M21.5 22v-6h-6"></path><path d="M22 11.5A10 10 0 0 0 3.2 7.2L2.5 8M2 12.5a10 10 0 0 0 18.8 4.2l.7-.7"></path></svg>
+              Restore to this Version
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Detail Body -->
+        <div>
+          <!-- Intent & Analysis -->
+          <div class="glass panel-section">
+            <div class="panel-title">Developer Intent / Prompt</div>
+            <p id="detailIntent" style="font-size: 1.05rem; line-height: 1.6; color: var(--text-primary); margin-bottom: 1.25rem;">-</p>
+
+            <div class="panel-title">Intelligence Analysis & Recommendation</div>
+            <div id="detailAnalysisBox" class="alert-box info">
+              <div id="detailAnalysisText">No analysis recorded.</div>
+            </div>
+            <div id="detailRecommendationBox" style="font-size: 0.9rem; color: #a5b4fc; background: rgba(99, 102, 241, 0.08); padding: 0.85rem; border-radius: 8px; border-left: 3px solid var(--accent-primary);">
+              <b>Actionable Advice:</b> <span id="detailRecommendationText">-</span>
+            </div>
+          </div>
+
+          <!-- Metrics & Test Results -->
+          <div class="glass panel-section">
+            <div class="panel-title">Metrics & Validations</div>
+            <div id="detailMetricsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+              <!-- Populated by JS -->
+            </div>
+            <div id="detailTestStats" style="font-size: 0.85rem; color: var(--text-secondary);">
+              Tests: <span id="detailTestsPassed" style="color: var(--accent-emerald); font-weight: 600;">0</span> passed · 
+              <span id="detailTestsFailed" style="color: var(--accent-rose); font-weight: 600;">0</span> failed
+            </div>
+          </div>
+
+          <!-- Code Diff Viewer -->
+          <div class="glass panel-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <div class="panel-title" style="margin-bottom: 0;">Code Changes & Git Diff</div>
+              <span id="detailDiffStats" style="font-size: 0.85rem; color: var(--text-muted);">+0 / -0 lines</span>
+            </div>
+            <div class="diff-container">
+              <div id="detailDiffBody" class="diff-body">No diff available.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. COMPARE TAB -->
+    <section id="tab-compare" class="tab-content">
+      <div class="compare-selectors">
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Base Version (Before)</label>
+          <select id="compareSelectA" class="select-custom"></select>
+        </div>
+        <div style="font-size: 1.2rem; color: var(--text-muted); margin-top: 1rem;">→</div>
+        <div>
+          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Target Version (After)</label>
+          <select id="compareSelectB" class="select-custom"></select>
+        </div>
+        <div style="margin-top: 1.3rem;">
+          <button class="btn-action" id="btnExecuteCompare">Compare Versions</button>
+        </div>
+      </div>
+
+      <!-- Deltas -->
+      <div id="compareDeltasContainer" class="compare-delta-grid">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Comparison Diff -->
+      <div class="glass panel-section">
+        <div class="panel-title">Diff Between Selected Versions</div>
+        <div class="diff-container">
+          <div id="compareDiffBody" class="diff-body">Select two versions and click Compare.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. FEATURES TAB -->
+    <section id="tab-features" class="tab-content">
+      <div style="margin-bottom: 1.5rem;">
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem;">Tracked Features & Evolution</h2>
+        <p style="font-size: 0.88rem; color: var(--text-secondary);">Feature health, iteration count, and status across the project lifecycle.</p>
+      </div>
+
+      <div id="featuresList" class="feature-grid">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- 6. AI MEMORY & WARNINGS TAB -->
+    <section id="tab-memory" class="tab-content">
+      <div style="margin-bottom: 1.5rem;">
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem;">Development Memory & AI Agent Guidance</h2>
+        <p style="font-size: 0.88rem; color: var(--text-secondary);">Prevents AI coding agents from repeating historical regressions and mistakes.</p>
+      </div>
+
+      <div class="search-wrapper">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="memorySearchInput" class="search-input" placeholder="Search development memory (e.g. learning rate, authentication, database)...">
+      </div>
+
+      <div class="glass panel-section" style="margin-bottom: 1.5rem;">
+        <div class="panel-title" style="color: #fb7185;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          Previous Regressions & Failed Approaches (Agent Warnings)
+        </div>
+        <div id="memoryWarningsList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="glass panel-section">
+        <div class="panel-title">AI Prompt Injection Snippet</div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">This snippet is supplied via MCP or API into coding agent prompts (Claude Code, Cursor, Codex):</p>
+        <pre id="memoryPromptSnippet" class="mono" style="background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 8px; font-size: 0.82rem; overflow-x: auto; color: #a5b4fc;"></pre>
+      </div>
+    </section>
+
+    <!-- 7. DATABRICKS TAB -->
+    <section id="tab-analytics" class="tab-content">
+      <div style="margin-bottom: 1.5rem;">
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem;">Databricks Delta Lake Analytics</h2>
+        <p style="font-size: 0.88rem; color: var(--text-secondary);">Cross-project agent effectiveness evaluation, regression pattern queries, and Delta table integration.</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card glass">
+          <div class="stat-header">
+            <span class="stat-label">Connection Status</span>
+            <div class="stat-icon">⚡</div>
+          </div>
+          <div class="stat-value" id="dbStatusBadge" style="font-size: 1.3rem;">Active (Local Fallback)</div>
+          <div class="stat-subtext">Delta Lake sync active</div>
+        </div>
+
+        <div class="stat-card glass">
+          <div class="stat-header">
+            <span class="stat-label">Total Regressions</span>
+            <div class="stat-icon">⚠</div>
+          </div>
+          <div class="stat-value" id="dbTotalRegressions" style="color: var(--accent-rose);">0</div>
+          <div class="stat-subtext">Detected by DevMemory</div>
+        </div>
+      </div>
+
+      <!-- Agent Performance Table -->
+      <div class="glass panel-section" style="margin-bottom: 1.5rem;">
+        <div class="panel-title">AI Agent Effectiveness Comparison</div>
+        <div id="dbAgentTable">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Risky Files -->
+      <div class="glass panel-section" style="margin-bottom: 1.5rem;">
+        <div class="panel-title">Files Most Frequently Involved in Regressions</div>
+        <div id="dbRiskyFiles">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Databricks SQL Queries -->
+      <div class="glass panel-section">
+        <div class="panel-title">Databricks SQL Analytical Schema</div>
+        <pre class="mono" style="background: rgba(0,0,0,0.6); padding: 1rem; border-radius: 8px; font-size: 0.82rem; overflow-x: auto; color: #38bdf8;">-- Databricks Delta Lake Table Definition
+CREATE TABLE IF NOT EXISTS devmemory_analytics.development_intelligence.development_versions (
+    version_id INT,
+    project_id STRING,
+    timestamp TIMESTAMP,
+    checkpoint_id STRING,
+    session_id STRING,
+    agent STRING,
+    intent STRING,
+    git_commit STRING,
+    parent_commit STRING,
+    branch STRING,
+    changed_files ARRAY&lt;STRING&gt;,
+    additions INT,
+    deletions INT,
+    feature STRING,
+    status STRING,
+    tests_passed INT,
+    tests_failed INT,
+    metrics MAP&lt;STRING, DOUBLE&gt;,
+    errors ARRAY&lt;STRING&gt;,
+    analysis STRING,
+    recommendation STRING,
+    is_regression BOOLEAN,
+    artifact_path STRING
+) USING DELTA;</pre>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
