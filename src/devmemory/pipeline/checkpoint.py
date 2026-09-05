@@ -11,6 +11,8 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel
 
+from devmemory.adapters.metrics import MetricsAdapter
+from devmemory.adapters.tests import TestAdapter
 from devmemory.domain.enums import VersionStatus
 from devmemory.domain.errors import (
     CheckpointNotFoundError,
@@ -27,9 +29,11 @@ from devmemory.domain.models import (
 from devmemory.environment import collect_environment
 from devmemory.logging import get_logger
 from devmemory.pipeline.feature_detect import detect_feature
+from devmemory.pipeline.regression import RegressionThresholds, detect_regressions
 from devmemory.pipeline.runlog import RunLog, StageRecord
 from devmemory.pipeline.status_rules import derive_status
 from devmemory.services.context import ProjectContext
+from devmemory.services.features import refresh_feature_status
 from devmemory.services.versions import create_version_from_event
 from devmemory.storage.versions import VersionRepository
 
@@ -44,7 +48,10 @@ class CheckpointRequest(BaseModel):
     tests_passed: int | None = None
     tests_failed: int | None = None
     tests_skipped: int | None = None
+    run_tests: bool = True
+    """Run the configured test command (unless explicit counts were given)."""
     metrics: list[Metric] = []
+    metrics_file: str | None = None
     errors: list[str] = []
     allow_no_entire: bool = False
     force: bool = False
@@ -141,18 +148,39 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
             )
             st.data["feature"] = feature[0] if feature else None
 
+        repo = VersionRepository(ctx.db)
+        previous = repo.previous_relevant(
+            ctx.config.project_id,
+            before_number=(
+                existing.version_number if existing else repo.count(ctx.config.project_id) + 1
+            ),
+        )
+
         with run.stage("collect_tests") as st:
-            tests = _tests_from_request(request)
-            if tests is not None:
-                st.data |= {"passed": tests.passed, "failed": tests.failed}
-            else:
-                st.status = "skipped"
+            tests = _collect_tests(ctx, request, st)
+
+        with run.stage("collect_metrics") as st:
+            metrics = _collect_metrics(ctx, request, previous, st)
+
+        with run.stage("detect_regression") as st:
+            regressions = detect_regressions(
+                metrics=metrics,
+                tests=tests,
+                previous=previous,
+                thresholds=RegressionThresholds(**ctx.config.regression.model_dump()),
+            )
+            for r in regressions:
+                warnings.append(f"regression [{r.severity}] {r.detail}")
+            st.data["count"] = len(regressions)
+            if regressions:
+                st.status = "degraded"
 
         with run.stage("determine_status") as st:
             status = derive_status(
                 explicit=request.status,
                 tests=tests,
                 errors=request.errors,
+                regressions=regressions,
                 has_changes=bool(changed_files),
             )
             st.data["status"] = status.value
@@ -174,16 +202,25 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
                 checkpoint=checkpoint,
                 status=status,
                 tests=tests,
-                metrics=request.metrics,
+                metrics=metrics,
                 errors=request.errors,
                 environment=environment,
             )
 
         with run.stage("persist_version") as st:
-            version = create_version_from_event(ctx, event, force=request.force)
+            version = create_version_from_event(
+                ctx, event, force=request.force, regressions=regressions
+            )
             run.version_id = version.version_id
             run.project_state_changed = True
             st.data["version"] = version.version_id
+
+        with run.stage("refresh_feature") as st:
+            if version.feature_id:
+                updated = refresh_feature_status(ctx, version.feature_id)
+                st.data["feature_status"] = updated.status.value if updated else None
+            else:
+                st.status = "skipped"
 
         run.finish(outcome="success")
     except DevMemoryError as exc:
@@ -228,20 +265,82 @@ def _resolve_checkpoint(
     return ref
 
 
-def _tests_from_request(request: CheckpointRequest) -> TestOutcome | None:
-    if request.tests_passed is None and request.tests_failed is None:
+def _collect_tests(
+    ctx: ProjectContext,
+    request: CheckpointRequest,
+    stage: StageRecord,
+) -> TestOutcome | None:
+    if request.tests_passed is not None or request.tests_failed is not None:
+        passed = request.tests_passed or 0
+        failed = request.tests_failed or 0
+        skipped = request.tests_skipped or 0
+        stage.detail = "manual counts"
+        stage.data |= {"passed": passed, "failed": failed}
+        return TestOutcome(
+            command="(manual)",
+            total=passed + failed + skipped,
+            passed=passed,
+            failed=failed,
+            skipped=skipped,
+            exit_code=0 if failed == 0 else 1,
+        )
+
+    command = ctx.config.tests.command
+    if not command or not request.run_tests:
+        stage.status = "skipped"
+        stage.detail = "no test command configured" if not command else "--no-run-tests"
         return None
-    passed = request.tests_passed or 0
-    failed = request.tests_failed or 0
-    skipped = request.tests_skipped or 0
-    return TestOutcome(
-        command="(manual)",
-        total=passed + failed + skipped,
-        passed=passed,
-        failed=failed,
-        skipped=skipped,
-        exit_code=0 if failed == 0 else 1,
-    )
+
+    try:
+        outcome = TestAdapter(ctx.paths.repo_root).run(
+            command,
+            parser=ctx.config.tests.parser,
+            junit_xml=ctx.config.tests.junit_xml,
+            timeout=ctx.config.tests.timeout_seconds,
+        )
+    except DevMemoryError as exc:
+        # A *collection* failure is a DevMemory problem, not a development result -
+        # record the version without tests rather than aborting the run.
+        stage.status = "degraded"
+        stage.detail = exc.message
+        return None
+    stage.data |= {"passed": outcome.passed, "failed": outcome.failed, "exit": outcome.exit_code}
+    return outcome
+
+
+def _collect_metrics(
+    ctx: ProjectContext,
+    request: CheckpointRequest,
+    previous: DevelopmentVersion | None,
+    stage: StageRecord,
+) -> list[Metric]:
+    metrics = list(request.metrics)
+    file = request.metrics_file or ctx.config.metrics.file
+    command = ctx.config.metrics.command
+    if file or command:
+        try:
+            collected = MetricsAdapter(ctx.paths.repo_root).collect(
+                file=file,
+                command=command,
+                directions=ctx.config.metrics.directions,
+            )
+        except DevMemoryError as exc:
+            stage.status = "degraded"
+            stage.detail = exc.message
+            collected = []
+        by_name = {m.name for m in metrics}
+        metrics.extend(m for m in collected if m.name not in by_name)
+
+    # Backfill `before` from the previous version's `after` for the same metric.
+    prev_after = {m.name: m.after for m in previous.metrics} if previous else {}
+    for m in metrics:
+        if m.before is None and m.name in prev_after:
+            m.before = prev_after[m.name]
+
+    stage.data["names"] = [m.name for m in metrics]
+    if not metrics:
+        stage.status = "skipped"
+    return metrics
 
 
 __all__ = ["CheckpointRequest", "CheckpointResult", "run_checkpoint"]

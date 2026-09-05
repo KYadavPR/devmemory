@@ -15,6 +15,7 @@ from devmemory.domain.models import (
     DevelopmentEvent,
     DevelopmentVersion,
     DiffStat,
+    Regression,
 )
 from devmemory.logging import get_logger
 from devmemory.services.context import ProjectContext
@@ -60,11 +61,13 @@ def create_version_from_event(
     event: DevelopmentEvent,
     *,
     force: bool = False,
+    regressions: list[Regression] | None = None,
 ) -> DevelopmentVersion:
     """Persist a normalized event as a new :class:`DevelopmentVersion`.
 
-    Phase 3 keeps the derived fields (status, regressions, analysis) minimal;
-    the checkpoint pipeline (Phase 4+) fills them before calling in.
+    The checkpoint pipeline assembles ``event`` (status, tests, metrics) and the
+    detected ``regressions`` before calling in; the analysis layer is applied
+    afterwards via :func:`~devmemory.services.versions.set_analysis`.
     """
     repo = VersionRepository(ctx.db)
 
@@ -106,6 +109,7 @@ def create_version_from_event(
         entire_association_confidence=(checkpoint.association_confidence if checkpoint else 0.0),
         tests=event.tests,
         metrics=event.metrics,
+        regressions=[r.model_copy(update={"version_id": version_id}) for r in (regressions or [])],
         environment=event.environment,
         run_id=event.run_id,
         created_at=datetime.now(UTC),
@@ -129,6 +133,7 @@ def create_version_from_event(
             "checkpoint": stored.primary_checkpoint.checkpoint_id
             if stored.primary_checkpoint
             else None,
+            "regressions": len(stored.regressions),
         },
     )
     _log.info(

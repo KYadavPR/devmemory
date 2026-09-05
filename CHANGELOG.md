@@ -6,6 +6,28 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 6: test + metric collection, regression detection
+
+- `TestAdapter`: runs the configured `tests.command` and normalizes the result —
+  pytest / go / generic stdout parsers, a JUnit XML reader, timeout handling. A
+  non-zero exit with no parsed failures still counts as failed. Collection
+  failures degrade the run (the version is still recorded), they don't abort it.
+- `MetricsAdapter`: reads metrics from a JSON file or a command's JSON stdout;
+  scalar (`{"accuracy": 93.4}`) and object (`{"latency": {"before", "after",
+  "unit"}}`) shapes; direction from config, then a name heuristic.
+- `pipeline.regression.detect_regressions`: direction-aware metric comparison
+  against the previous relevant version (configurable percent threshold +
+  severity bands) and test comparison (newly-failing / dropped-passing). The
+  version's `before` is backfilled from the previous version's `after`.
+- `status_rules.derive_status` now returns `REGRESSION` when regressions are
+  present.
+- Pipeline stages added: `collect_metrics`, `detect_regression`,
+  `refresh_feature` (recomputes the feature's roll-up status from its versions).
+- `services.features`: `refresh_feature_status`, feature roll-up
+  (`COMPLETE`/`PARTIAL`/`FAILED`/`IN_PROGRESS` from the latest version).
+- CLI: `devmemory checkpoint` gains `--run-tests/--no-run-tests` and
+  `--metrics-file`. Config gains a `regression` section (thresholds).
+
 ### Added — Phase 5: REST API + dashboard
 
 - FastAPI app (`devmemory.api`): `/api/project` (+ `/api/status`), `/api/versions`,

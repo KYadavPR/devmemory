@@ -103,6 +103,15 @@ class DatabricksSettings(_Section):
     schema_name: str = Field(default="analytics", alias="schema")
 
 
+class RegressionSettings(_Section):
+    """Thresholds for the rule-based regression detector."""
+
+    metric_pct: float = 2.0
+    metric_abs_floor: float = 1e-9
+    high_pct: float = 15.0
+    medium_pct: float = 6.0
+
+
 class AnalysisSettings(_Section):
     """LLM-backed analysis. Providers are tried in order; `rules` never fails."""
 
@@ -128,6 +137,7 @@ class DevMemoryConfig(_Section):
     tests: TestSettings = Field(default_factory=TestSettings)
     metrics: MetricSettings = Field(default_factory=MetricSettings)
     artifacts: ArtifactSettings = Field(default_factory=ArtifactSettings)
+    regression: RegressionSettings = Field(default_factory=RegressionSettings)
     databricks: DatabricksSettings = Field(default_factory=DatabricksSettings)
     analysis: AnalysisSettings = Field(default_factory=AnalysisSettings)
     web: WebSettings = Field(default_factory=WebSettings)
@@ -248,6 +258,7 @@ __all__ = [
     "DevMemoryConfig",
     "EntireSettings",
     "MetricSettings",
+    "RegressionSettings",
     "TestSettings",
     "WebSettings",
     "resolve_databricks_credentials",

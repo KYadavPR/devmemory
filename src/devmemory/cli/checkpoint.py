@@ -45,16 +45,24 @@ def checkpoint_command(
         typer.Option("--status", help="Override the derived status (SUCCESS, REGRESSION, ...)."),
     ] = None,
     tests_passed: Annotated[
-        int | None, typer.Option("--tests-passed", help="Passing test count.")
+        int | None, typer.Option("--tests-passed", help="Passing test count (skips the runner).")
     ] = None,
     tests_failed: Annotated[
-        int | None, typer.Option("--tests-failed", help="Failing test count.")
+        int | None, typer.Option("--tests-failed", help="Failing test count (skips the runner).")
     ] = None,
+    run_tests: Annotated[
+        bool,
+        typer.Option("--run-tests/--no-run-tests", help="Run the configured test command."),
+    ] = True,
     metrics: Annotated[
         list[str] | None,
         typer.Option(
             "--metric", "-m", help="Metric as name=after or name=before:after (repeatable)."
         ),
+    ] = None,
+    metrics_file: Annotated[
+        str | None,
+        typer.Option("--metrics-file", help="Path to a JSON metrics file to read."),
     ] = None,
     errors: Annotated[
         list[str] | None, typer.Option("--error", "-e", help="An error encountered (repeatable).")
@@ -76,7 +84,9 @@ def checkpoint_command(
         status=_parse_status(status),
         tests_passed=tests_passed,
         tests_failed=tests_failed,
+        run_tests=run_tests,
         metrics=[_parse_metric(m) for m in (metrics or [])],
+        metrics_file=metrics_file,
         errors=list(errors or []),
         allow_no_entire=allow_no_entire,
         force=force,
