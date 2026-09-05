@@ -6,6 +6,30 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 1: `devmemory init` + Git adapter
+
+- `GitAdapter` (`devmemory.adapters.git`): subprocess-based, no GitPython. Repo
+  detection, HEAD/branch/commit metadata with parsed trailers, `Entire-Checkpoint`
+  trailer extraction, NUL-delimited name-status + numstat diff parsing (adds,
+  deletes, renames, binary), root-commit handling, working-tree state, ref-blob
+  reads for Entire checkpoint refs later.
+- `EntireAdapter.probe()` (`devmemory.adapters.entire`): detects whether the
+  Entire CLI is installed and enabled, its version and configured agents.
+  Degrades gracefully; never fabricates.
+- Domain models (`devmemory.domain.models`): `CommitInfo`, `ChangedFile`,
+  `DiffStat`, `WorkingTreeState`, `CheckpointReference` (+ sessions, token usage,
+  association method/confidence), `EntireStatus`, `Project`, `EnvironmentInfo`.
+- `devmemory.environment`: best-effort toolchain snapshot (Python, platform,
+  git, Entire, package manager).
+- Storage: `ProjectRepository` — the single place `projects` SQL lives.
+- Services: `ProjectContext` (the wired bundle every entry point works through)
+  and `devmemory.services.projects` (`init_project`, `project_status`).
+- CLI: `devmemory init` (`--name`, `--project-id`, `--force`, `--json`) and
+  `devmemory status` (`--json`), with shared Rich rendering and a `handle_errors`
+  decorator that maps the error taxonomy to exit codes under the CLI runner.
+- `init` writes `.devmemory/config.json`, creates and migrates the database,
+  registers the project, and appends local-only paths to the repo `.gitignore`.
+
 ### Added — Phase 0: repository & package foundation
 
 - `devmemory` / `dm` console entry points with `--version` and a `version` command

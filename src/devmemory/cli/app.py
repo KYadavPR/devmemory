@@ -1,8 +1,8 @@
 """The ``devmemory`` / ``dm`` entry point.
 
-Phase 0 ships the shell: ``--version`` and a ``version`` command that also reports
-the tools DevMemory builds on. Subcommands (``init``, ``checkpoint``, ``serve``,
-...) are added in later phases.
+Thin Typer layer: each command lives in its own module and is registered here.
+Top-level error handling turns :class:`DevMemoryError` into a clean message +
+hint + exit code.
 """
 
 from __future__ import annotations
@@ -16,6 +16,9 @@ from rich.console import Console
 from rich.table import Table
 
 from devmemory.__about__ import __version__
+from devmemory.cli._errors import handle_errors
+from devmemory.cli.init import init_command
+from devmemory.cli.status import status_command
 from devmemory.domain.errors import DevMemoryError
 
 console = Console()
@@ -87,6 +90,10 @@ def version() -> None:
     table.add_row("git", _tool_version("git", ["--version"]))
     table.add_row("entire", _tool_version("entire", ["version"]))
     console.print(table)
+
+
+app.command(name="init")(handle_errors(init_command))
+app.command(name="status")(handle_errors(status_command))
 
 
 def main() -> None:
