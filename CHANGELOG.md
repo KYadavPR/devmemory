@@ -6,6 +6,25 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 5: REST API + dashboard
+
+- FastAPI app (`devmemory.api`): `/api/project` (+ `/api/status`), `/api/versions`,
+  `/api/versions/{ref}` (resolves `v7` / `7` / sha-prefix), `.../diff`,
+  `.../checkpoint`, `.../trace`, `/api/compare?from&to`, `/api/features`,
+  `/api/features/{ref}`, `/api/search`, `/api/health`, OpenAPI at `/api/docs`.
+  Per-request `ProjectContext` (own SQLite connection); domain errors map to
+  404/400.
+- `services.trace.build_trace`: the development trace — intent → agent → Entire
+  checkpoint → commit → files → tests → metrics → status → analysis — as an
+  ordered node list the UI draws as a connected chain.
+- `services.features`: feature roll-up status and per-feature version history.
+- Dashboard: a dependency-free, hash-routed single-page app served from the wheel
+  (`devmemory serve`) — Overview, Timeline, Version detail (record + trace +
+  metrics + files + syntax-coloured diff), Compare, Features, Memory (failed
+  approaches), Search. Light/dark theme with a toggle; design-token CSS.
+- `devmemory serve` (`--host`, `--port`, `--open/--no-open`, `--enable-restore`):
+  picks a free port, opens the browser, runs uvicorn.
+
 ### Added — Phase 4: `devmemory checkpoint` end-to-end
 
 - The checkpoint pipeline (`devmemory.pipeline`): an ordered, individually-timed

@@ -22,6 +22,7 @@ from devmemory.cli._render import console, err_console
 from devmemory.cli.checkpoint import checkpoint_command
 from devmemory.cli.history import history_command
 from devmemory.cli.init import init_command
+from devmemory.cli.serve import serve_command
 from devmemory.cli.show import show_command
 from devmemory.cli.status import status_command
 from devmemory.domain.errors import DevMemoryError
@@ -107,6 +108,7 @@ app.command(name="status")(handle_errors(status_command))
 app.command(name="checkpoint")(handle_errors(checkpoint_command))
 app.command(name="history")(handle_errors(history_command))
 app.command(name="show")(handle_errors(show_command))
+app.command(name="serve")(handle_errors(serve_command))
 
 
 def main() -> None:

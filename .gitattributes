@@ -33,5 +33,5 @@
 *.tar.gz binary
 *.db    binary
 
-# Keep generated / vendored files out of diffs and language stats.
-src/devmemory/web/static/**  linguist-generated=true
+# Dashboard assets ship in the wheel; keep them out of language stats.
+src/devmemory/api/static/**  linguist-vendored=true

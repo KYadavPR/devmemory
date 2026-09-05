@@ -144,6 +144,11 @@ markers = [
     "integration: tests that shell out to git/entire or touch the network",
     "slow: long-running tests",
 ]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:starlette.*",
+    "ignore::DeprecationWarning:anyio.*",
+]
 
 [tool.coverage.run]
 source = ["devmemory"]
