@@ -19,6 +19,7 @@ from rich.table import Table
 from devmemory.__about__ import __version__
 from devmemory.cli._errors import handle_errors
 from devmemory.cli._render import console, err_console
+from devmemory.cli.analytics import analytics_command, databricks_app
 from devmemory.cli.checkpoint import checkpoint_command
 from devmemory.cli.compare import compare_command, diff_command
 from devmemory.cli.history import history_command
@@ -117,6 +118,8 @@ app.command(name="compare")(handle_errors(compare_command))
 app.command(name="search")(handle_errors(search_command))
 app.command(name="memory")(handle_errors(memory_command))
 app.command(name="restore")(handle_errors(restore_command))
+app.command(name="analytics")(handle_errors(analytics_command))
+app.add_typer(databricks_app, name="databricks")
 app.command(name="serve")(handle_errors(serve_command))
 
 

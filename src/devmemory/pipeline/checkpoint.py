@@ -33,6 +33,7 @@ from devmemory.pipeline.regression import RegressionThresholds, detect_regressio
 from devmemory.pipeline.runlog import RunLog, StageRecord
 from devmemory.pipeline.status_rules import derive_status
 from devmemory.services.context import ProjectContext
+from devmemory.services.databricks_sync import push_version
 from devmemory.services.features import refresh_feature_status
 from devmemory.services.memory import MemoryQuery, previous_attempts
 from devmemory.services.versions import create_version_from_event
@@ -245,6 +246,24 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
                 st.data["feature_status"] = updated.status.value if updated else None
             else:
                 st.status = "skipped"
+
+        with run.stage("publish_databricks") as st:
+            try:
+                sync = push_version(ctx, version)
+                st.data |= {
+                    "configured": sync.configured,
+                    "pushed": sync.pushed,
+                    "queued": sync.queued,
+                }
+                if not sync.configured:
+                    st.status = "skipped"
+                    st.detail = "queued to outbox (Databricks not configured)"
+                elif sync.failed:
+                    st.status = "degraded"
+                    st.detail = sync.detail
+            except DevMemoryError as exc:  # never fatal
+                st.status = "degraded"
+                st.detail = exc.message
 
         with run.stage("create_artifact") as st:
             if not request.snapshot or not ctx.config.artifacts.enabled:

@@ -27,6 +27,7 @@ from devmemory.api.schemas import (
 )
 from devmemory.domain.errors import DevMemoryError
 from devmemory.domain.models import CheckpointReference, DevelopmentVersion, EntireStatus
+from devmemory.services.analytics import AnalyticsSummary, analytics_summary
 from devmemory.services.context import ProjectContext
 from devmemory.services.features import get_feature, list_features
 from devmemory.services.memory import MemoryQuery, PreviousAttempt, previous_attempts
@@ -161,6 +162,12 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.get("/api/features/{ref}", response_model=FeatureDetail)
     def feature(ctx: Ctx, ref: str) -> FeatureDetail:
         return mappers.feature_detail(get_feature(ctx, ref))
+
+    # -- analytics ---------------------------------------------
+
+    @app.get("/api/analytics", response_model=AnalyticsSummary)
+    def analytics(ctx: Ctx) -> AnalyticsSummary:
+        return analytics_summary(ctx)
 
     # -- restore ------------------------------------------------
 

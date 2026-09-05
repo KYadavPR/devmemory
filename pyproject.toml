@@ -122,6 +122,10 @@ ban-relative-imports = "all"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106", "S603", "S607", "SLF001"]
+# Table names are interpolated from trusted project config (catalog/schema),
+# every value is a bound `:param`. There is no user SQL surface here.
+"src/devmemory/adapters/databricks.py" = ["S608"]
+"src/devmemory/services/analytics.py" = ["S608"]
 
 [tool.mypy]
 python_version = "3.11"

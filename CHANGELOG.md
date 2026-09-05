@@ -6,6 +6,38 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 10: development intelligence + Databricks analytics
+
+- `services.analytics.analytics_summary`: one report — regression leaderboard,
+  feature attempt/success/regression counts, file churn (with an adverse-change
+  ratio), agent effectiveness (success rate, tokens per success), a per-version
+  trend, and repeatedly-failed approaches (adverse versions clustered by their
+  exact changed-file signature, ≥2 occurrences). Carries a `source` field:
+  `local` (SQLite, always available — the demo path) or `databricks`.
+- `adapters.databricks.DatabricksAdapter`: REST-only publishing and querying via
+  the SQL Statement Execution API against a serverless SQL warehouse — no Spark,
+  no cluster. `bootstrap()` creates a Delta star schema (`fact_versions` +
+  `fact_changed_files` / `fact_metrics` / `fact_tests` / `fact_regressions`);
+  `publish_version()` is an idempotent `MERGE`. Every value travels as a bound
+  named `:param`; table names come only from trusted `catalog`/`schema` config.
+- Only a fixed 24-field allowlist (`_VERSION_FIELDS`) ever leaves the machine —
+  never source, diffs, transcripts, prompts, or secrets. The intent string is
+  truncated to 2000 chars. Credentials come from `DATABRICKS_HOST` /
+  `DATABRICKS_TOKEN` / `DATABRICKS_WAREHOUSE_ID` only.
+- `services.databricks_sync`: an offline outbox. Every published version is
+  written to `.devmemory/outbox/<version>.json` first; if Databricks is
+  configured and reachable the pipeline pushes immediately and removes the file,
+  otherwise it stays queued. Local history never depends on any of this — a push
+  failure degrades the run, it does not abort it.
+- Pipeline stage `publish_databricks` (before `create_artifact`): `skipped` when
+  not configured (queued to the outbox), `degraded` on a push failure.
+- CLI: `devmemory analytics` (`--json`) and `devmemory databricks status` /
+  `devmemory databricks push`.
+- API: `GET /api/analytics`.
+- Dashboard: an **Intelligence** tab — the regression leaderboard, feature
+  attempts, file churn, agent effectiveness, an SVG trend sparkline, and the
+  repeatedly-failed-approaches callout, badged by `source`.
+
 ### Added — Phase 9: project snapshots + safe restore
 
 - `ArtifactStore`: a `.tar.gz` snapshot per version, built from `git archive`

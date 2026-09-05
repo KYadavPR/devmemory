@@ -69,6 +69,7 @@ const routes = {
   feature: renderFeature,
   compare: renderCompare,
   memory: renderMemory,
+  intelligence: renderIntelligence,
   search: renderSearch,
   version: renderVersion,
 };
@@ -423,6 +424,59 @@ function attemptCard(a) {
     <div class="secondary" style="font-size:13px;margin-top:4px">result: ${esc(a.result)}</div>
     ${a.recommendation ? `<div style="font-size:13px;margin-top:6px;color:var(--accent)">→ ${esc(a.recommendation)}</div>` : ""}
   </div>`;
+}
+
+async function renderIntelligence() {
+  const a = await api("/analytics");
+  const t = (rows, cols) => `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr>${cols.map((c) => `<th style="text-align:${c.r ? "right" : "left"};padding:6px 8px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--border)">${esc(c.h)}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map((row) => `<tr>${cols.map((c) => `<td style="text-align:${c.r ? "right" : "left"};padding:6px 8px;border-bottom:1px solid var(--border)">${row[c.k]}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+
+  view.innerHTML =
+    pageHead("Development intelligence", `source: ${a.source} · ${a.version_count} versions · ${a.regression_count} regressions · ${a.success_rate}% success`) +
+    `<div class="grid cols-3" style="margin-bottom:16px">
+      ${stat("Success rate", a.success_rate + "%", `${a.version_count} versions`)}
+      ${stat("Regressions", a.regression_count, "flagged")}
+      ${stat("Features", a.features.length, "tracked")}
+    </div>
+    <div class="grid cols-2">
+      <div class="card"><div class="card-head">Regression leaderboard</div><div class="card-pad">${
+        a.regressions.length ? t(a.regressions.map((r) => ({ v: `<a class="link" href="#/version/${r.version_id}">${r.version_id.toUpperCase()}</a>`, s: badge(r.severity, r.severity === "HIGH" ? "REGRESSION" : "PARTIAL_SUCCESS"), f: esc(r.feature || "-"), d: esc(r.detail) })), [{ h: "", k: "v" }, { h: "sev", k: "s" }, { h: "feature", k: "f" }, { h: "detail", k: "d" }]) : `<span class="muted">none</span>`
+      }</div></div>
+      <div class="card"><div class="card-head">Feature attempts</div><div class="card-pad">${
+        t(a.features.map((f) => ({ n: esc(f.feature), a: f.attempts, s: f.success_rate + "%", r: f.regressions })), [{ h: "feature", k: "n" }, { h: "attempts", k: "a", r: 1 }, { h: "success", k: "s", r: 1 }, { h: "regr", k: "r", r: 1 }])
+      }</div></div>
+      <div class="card"><div class="card-head">File churn</div><div class="card-pad">${
+        t(a.file_churn.map((f) => ({ p: `<span class="mono">${esc(f.path)}</span>`, c: f.changes, x: f.adverse_changes })), [{ h: "file", k: "p" }, { h: "changes", k: "c", r: 1 }, { h: "adverse", k: "x", r: 1 }])
+      }</div></div>
+      <div class="card"><div class="card-head">Agent effectiveness</div><div class="card-pad">${
+        t(a.agents.map((g) => ({ a: esc(g.agent), v: g.versions, s: g.success_rate + "%", tk: g.tokens_per_success ? (g.tokens_per_success / 1000).toFixed(0) + "k" : "-" })), [{ h: "agent", k: "a" }, { h: "versions", k: "v", r: 1 }, { h: "success", k: "s", r: 1 }, { h: "tok/success", k: "tk", r: 1 }])
+      }</div></div>
+    </div>` +
+    (a.trend.length > 1 ? `<div class="card" style="margin-top:16px"><div class="card-head">Trend</div><div class="card-pad">${sparkRow(a.trend)}</div></div>` : "") +
+    (a.failed_approaches.length ? `<div class="card" style="margin-top:16px;border-color:var(--bad)">
+      <div class="card-head">Repeatedly-failed approaches</div>
+      <div class="card-pad">${a.failed_approaches.map((f) => `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><b>${f.occurrences}×</b> <span class="mono">${esc(f.signature.join(", "))}</span> <span class="muted">${esc(f.example_intent || "")}</span> — ${f.version_ids.map((v) => `<a class="link" href="#/version/${v}">${v.toUpperCase()}</a>`).join(" ")}</div>`).join("")}</div>
+    </div>` : "") +
+    `<p class="muted" style="margin-top:16px;font-size:12px">${a.source === "databricks" ? "Live from Databricks Delta tables." : "Computed locally. Configure DATABRICKS_* to publish and query in Databricks."}</p>`;
+}
+
+function sparkRow(trend) {
+  const w = 620, h = 60, n = trend.length;
+  const vals = trend.map((p) => (p.key_metric != null ? p.key_metric : p.test_pass_rate)).filter((x) => x != null);
+  if (!vals.length) return `<span class="muted">no metric to trend</span>`;
+  const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+  const pts = trend.map((p, i) => {
+    const v = p.key_metric != null ? p.key_metric : p.test_pass_rate;
+    const x = (i / Math.max(1, n - 1)) * w;
+    const y = v == null ? null : h - ((v - mn) / rng) * (h - 8) - 4;
+    return { x, y, p };
+  });
+  const path = pts.filter((q) => q.y != null).map((q, i) => `${i ? "L" : "M"}${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ");
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px">
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+    ${pts.filter((q) => q.y != null).map((q) => `<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="3" fill="${q.p.status === "REGRESSION" || q.p.status === "ERROR" ? "var(--bad)" : "var(--accent)"}"><title>${esc(q.p.version_id.toUpperCase())}: ${q.p.key_metric ?? q.p.test_pass_rate}</title></circle>`).join("")}
+  </svg>`;
 }
 
 async function renderSearch(q) {
