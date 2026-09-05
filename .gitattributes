@@ -1,0 +1,37 @@
+# Normalize line endings: the repo stores LF, checkout is native.
+* text=auto eol=lf
+
+*.py    text eol=lf
+*.pyi   text eol=lf
+*.sql   text eol=lf
+*.toml  text eol=lf
+*.cfg   text eol=lf
+*.ini   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.txt   text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.sh    text eol=lf
+
+# Windows scripts keep CRLF.
+*.bat   text eol=crlf
+*.ps1   text eol=crlf
+
+# Binary.
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.tar.gz binary
+*.db    binary
+
+# Keep generated / vendored files out of diffs and language stats.
+src/devmemory/web/static/**  linguist-generated=true

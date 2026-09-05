@@ -1,0 +1,157 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "devmemory"
+dynamic = ["version"]
+description = "Development-memory and version-intelligence for AI-assisted software development"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "DevMemory contributors" }]
+keywords = [
+    "ai",
+    "git",
+    "entire",
+    "checkpoint",
+    "development-memory",
+    "version-intelligence",
+    "mcp",
+    "databricks",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Version Control :: Git",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.7",
+    "pydantic>=2.7",
+    "structlog>=24.1",
+    "platformdirs>=4.2",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+mcp = ["fastmcp>=2.3"]
+databricks = ["databricks-sdk>=0.30"]
+llm = [
+    "anthropic>=0.40",
+    "openai>=1.40",
+    "google-genai>=0.3",
+]
+all = ["devmemory[mcp,databricks,llm]"]
+dev = [
+    "devmemory[mcp,databricks,llm]",
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[project.urls]
+Documentation = "https://github.com/KYadavPR/devmemory"
+Source = "https://github.com/KYadavPR/devmemory"
+
+[project.scripts]
+devmemory = "devmemory.cli.app:main"
+dm = "devmemory.cli.app:main"
+
+[tool.hatch.version]
+path = "src/devmemory/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/devmemory"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/devmemory",
+    "docs",
+    "tests",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = ["docs", "examples", "src/devmemory/web/frontend"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "PTH",  # flake8-use-pathlib
+    "TID",  # flake8-tidy-imports
+    "S",    # flake8-bandit
+    "SLF",  # flake8-self
+    "RUF",  # ruff-specific
+]
+ignore = [
+    "E501",  # line length is enforced by the formatter
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["devmemory"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "SLF001"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/devmemory"]
+plugins = ["pydantic.mypy"]
+warn_unreachable = true
+warn_no_return = true
+show_error_codes = true
+enable_error_code = ["redundant-expr", "truthy-bool", "ignore-without-code"]
+
+[[tool.mypy.overrides]]
+module = ["fastmcp.*", "databricks.*", "google.genai.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+    "integration: tests that shell out to git/entire or touch the network",
+    "slow: long-running tests",
+]
+
+[tool.coverage.run]
+source = ["devmemory"]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+]
