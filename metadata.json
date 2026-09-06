@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1TX84JFA1V1F2B14FQNZ5B1",
+  "strategy": "manual-commit",
+  "branch": "feat/dashboard-redesign",
+  "checkpoints_count": 9,
+  "files_touched": [
+    "src/devmemory/api/app.py",
+    "src/devmemory/api/mappers.py",
+    "src/devmemory/api/schemas.py",
+    "src/devmemory/services/taskloop/__init__.py",
+    "src/devmemory/services/taskloop/collectors.py",
+    "src/devmemory/services/taskloop/engine.py",
+    "src/devmemory/web/frontend/src/App.tsx",
+    "src/devmemory/web/frontend/src/components/CommandPalette.tsx",
+    "src/devmemory/web/frontend/src/components/Sidebar.tsx",
+    "src/devmemory/web/frontend/src/lib/status.ts",
+    "src/devmemory/web/frontend/src/routes/TaskDetail.tsx",
+    "src/devmemory/web/frontend/src/routes/Tasks.tsx",
+    "src/devmemory/web/frontend/src/theme/components.css",
+    "tests/test_api_tasks.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 472,
+    "cache_creation_tokens": 1664529,
+    "cache_read_tokens": 94059128,
+    "output_tokens": 147169,
+    "api_call_count": 237
+  }
+}

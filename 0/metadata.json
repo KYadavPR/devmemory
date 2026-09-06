@@ -1,0 +1,126 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1TX84JFA1V1F2B14FQNZ5B1",
+  "session_id": "fcec3b82-fe78-4cb6-b1dc-40e4f8a72893",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-06T08:27:12.8882343Z",
+  "branch": "feat/dashboard-redesign",
+  "checkpoints_count": 9,
+  "files_touched": [
+    "src/devmemory/api/app.py",
+    "src/devmemory/api/mappers.py",
+    "src/devmemory/api/schemas.py",
+    "src/devmemory/services/taskloop/__init__.py",
+    "src/devmemory/services/taskloop/collectors.py",
+    "src/devmemory/services/taskloop/engine.py",
+    "src/devmemory/web/frontend/src/App.tsx",
+    "src/devmemory/web/frontend/src/components/CommandPalette.tsx",
+    "src/devmemory/web/frontend/src/components/Sidebar.tsx",
+    "src/devmemory/web/frontend/src/lib/status.ts",
+    "src/devmemory/web/frontend/src/routes/TaskDetail.tsx",
+    "src/devmemory/web/frontend/src/routes/Tasks.tsx",
+    "src/devmemory/web/frontend/src/theme/components.css",
+    "tests/test_api_tasks.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-haiku-4-5-20251001",
+  "turn_id": "134f14bbd55c",
+  "checkpoint_transcript_start": 1666,
+  "transcript_lines_at_start": 1666,
+  "compact_transcript_start": 345,
+  "token_usage": {
+    "input_tokens": 472,
+    "cache_creation_tokens": 1664529,
+    "cache_read_tokens": 94059128,
+    "output_tokens": 147169,
+    "api_call_count": 237
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01AVhWz5mAnwzPDCfW2D7M6d",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "dataviz"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "1013cc4d85c7",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 469,
+        "end": 470,
+        "entry_ids": [
+          "96114268-5981-46a9-bfe5-b6d5e5c70194"
+        ],
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: dataviz",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 14
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-06T08:27:11.5011881Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 233,
+    "total_committed": 0,
+    "total_lines_changed": 306,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 1265,
+      "user_lines_removed": 233,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 18,
+        "src/devmemory/api/app.py": 65,
+        "src/devmemory/api/mappers.py": 39,
+        "src/devmemory/api/schemas.py": 51,
+        "src/devmemory/services/taskloop/__init__.py": 10,
+        "src/devmemory/services/taskloop/collectors.py": 20,
+        "src/devmemory/services/taskloop/engine.py": 10,
+        "src/devmemory/web/frontend/src/App.tsx": 4,
+        "src/devmemory/web/frontend/src/api/client.ts": 194,
+        "src/devmemory/web/frontend/src/api/types.ts": 108,
+        "src/devmemory/web/frontend/src/components/CommandPalette.tsx": 15,
+        "src/devmemory/web/frontend/src/components/Sidebar.tsx": 1,
+        "src/devmemory/web/frontend/src/lib/status.ts": 18,
+        "src/devmemory/web/frontend/src/routes/TaskDetail.tsx": 346,
+        "src/devmemory/web/frontend/src/routes/Tasks.tsx": 108,
+        "src/devmemory/web/frontend/src/theme/components.css": 64,
+        "src/devmemory/web/static/assets/index-C97rjZ_P.js": 70,
+        "src/devmemory/web/static/assets/index-d0Pq9hps.css": 1,
+        "src/devmemory/web/static/index.html": 2,
+        "tests/test_api_tasks.py": 121
+      },
+      "user_removed_per_file": {
+        "src/devmemory/services/taskloop/collectors.py": 2,
+        "src/devmemory/web/frontend/src/api/client.ts": 154,
+        "src/devmemory/web/frontend/src/components/CommandPalette.tsx": 4,
+        "src/devmemory/web/static/assets/index-BRaVJrRW.js": 70,
+        "src/devmemory/web/static/assets/index-Dvb3nF1l.css": 1,
+        "src/devmemory/web/static/index.html": 2
+      }
+    }
+  ]
+}
