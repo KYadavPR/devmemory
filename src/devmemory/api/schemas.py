@@ -116,7 +116,16 @@ class SearchResponse(BaseModel):
     results: list[SearchHit]
 
 
+class AgentCheckRequest(BaseModel):
+    """Body for ``POST /api/agent/check`` - the pre-flight risk read."""
+
+    files: list[str] = []
+    intent: str | None = None
+    feature: str | None = None
+
+
 __all__ = [
+    "AgentCheckRequest",
     "ComparisonResponse",
     "FeatureDetail",
     "FeatureHistoryPoint",

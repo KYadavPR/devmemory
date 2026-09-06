@@ -6,6 +6,25 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 11: AI context API + MCP server
+
+- `services.agent_context`: agent-facing, JSON-first shapes shared by the MCP
+  server and the REST `/api/agent/*` endpoints. `project_brief` (orientation:
+  HEAD/branch, checkpoint coverage, success rate, open features, recent adverse
+  versions, cautions), `recent_history`, `version_report` (brief + trace),
+  and `change_guidance` — a pre-flight risk read that returns a verdict
+  (`proceed` / `caution` / `high-risk`) with the specific prior failures to read.
+  Facts and rule-based reads only; no LLM interpretation.
+- `devmemory mcp`: a read-only [MCP](https://modelcontextprotocol.io) server over
+  stdio (`fastmcp`). Tools: `get_project_context`, `get_version_history`,
+  `get_version`, `get_development_trace`, `get_previous_attempts`,
+  `check_before_change`, `search_versions`, `get_analytics`. `--print-config`
+  emits a ready `.mcp.json` fragment for the current repo. Requires the `mcp`
+  extra; a clear error otherwise.
+- API: `GET /api/agent/context`, `GET /api/agent/history`, `POST /api/agent/check`.
+- `docs/MCP.md`: wiring for Claude Code / Cursor, the tool table, the REST
+  equivalent.
+
 ### Added — Phase 10: development intelligence + Databricks analytics
 
 - `services.analytics.analytics_summary`: one report — regression leaderboard,

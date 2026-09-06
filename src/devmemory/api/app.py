@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from devmemory.__about__ import __version__
 from devmemory.api import mappers
 from devmemory.api.schemas import (
+    AgentCheckRequest,
     ComparisonResponse,
     FeatureDetail,
     ProjectSummary,
@@ -27,6 +28,14 @@ from devmemory.api.schemas import (
 )
 from devmemory.domain.errors import DevMemoryError
 from devmemory.domain.models import CheckpointReference, DevelopmentVersion, EntireStatus
+from devmemory.services.agent_context import (
+    ChangeGuidance,
+    ProjectBrief,
+    VersionBrief,
+    change_guidance,
+    project_brief,
+    recent_history,
+)
 from devmemory.services.analytics import AnalyticsSummary, analytics_summary
 from devmemory.services.context import ProjectContext
 from devmemory.services.features import get_feature, list_features
@@ -168,6 +177,24 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.get("/api/analytics", response_model=AnalyticsSummary)
     def analytics(ctx: Ctx) -> AnalyticsSummary:
         return analytics_summary(ctx)
+
+    # -- agent context (the REST half of the MCP surface) ------
+
+    @app.get("/api/agent/context", response_model=ProjectBrief)
+    def agent_context(ctx: Ctx) -> ProjectBrief:
+        return project_brief(ctx)
+
+    @app.get("/api/agent/history", response_model=list[VersionBrief])
+    def agent_history(
+        ctx: Ctx,
+        limit: Annotated[int, Query(ge=1, le=200)] = 20,
+        feature: Annotated[str | None, Query()] = None,
+    ) -> list[VersionBrief]:
+        return recent_history(ctx, limit=limit, feature=feature)
+
+    @app.post("/api/agent/check", response_model=ChangeGuidance)
+    def agent_check(ctx: Ctx, body: AgentCheckRequest) -> ChangeGuidance:
+        return change_guidance(ctx, files=body.files, intent=body.intent, feature=body.feature)
 
     # -- restore ------------------------------------------------
 

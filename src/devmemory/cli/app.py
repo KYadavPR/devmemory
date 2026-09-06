@@ -24,6 +24,7 @@ from devmemory.cli.checkpoint import checkpoint_command
 from devmemory.cli.compare import compare_command, diff_command
 from devmemory.cli.history import history_command
 from devmemory.cli.init import init_command
+from devmemory.cli.mcp import mcp_command
 from devmemory.cli.memory import memory_command
 from devmemory.cli.restore import restore_command
 from devmemory.cli.search import search_command
@@ -121,6 +122,7 @@ app.command(name="restore")(handle_errors(restore_command))
 app.command(name="analytics")(handle_errors(analytics_command))
 app.add_typer(databricks_app, name="databricks")
 app.command(name="serve")(handle_errors(serve_command))
+app.command(name="mcp")(handle_errors(mcp_command))
 
 
 def main() -> None:
