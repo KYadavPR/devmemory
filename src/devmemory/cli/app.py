@@ -76,8 +76,19 @@ def _main(
     ] = False,
 ) -> None:
     """DevMemory command-line interface."""
+    _load_dotenv()
     level = os.environ.get("DEVMEMORY_LOG_LEVEL") or ("INFO" if verbose else "WARNING")
     configure_logging(level=level, json_logs=False)
+
+
+def _load_dotenv() -> None:
+    """Load a ``.env`` (searched from the cwd upward) so credentials can live in a
+    file. Real environment variables always win - ``.env`` never overrides them."""
+    from dotenv import find_dotenv, load_dotenv
+
+    found = find_dotenv(usecwd=True)
+    if found:
+        load_dotenv(found, override=False)
 
 
 def _tool_version(executable: str, args: list[str]) -> str:

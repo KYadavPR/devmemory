@@ -12,6 +12,11 @@ dist/
 venv/
 env/
 
+# Secrets — the CLI loads .env; only .env.example is committed
+.env
+.env.*
+!.env.example
+
 # Test / type / lint caches
 .pytest_cache/
 .mypy_cache/

@@ -12,8 +12,19 @@ typo fails loudly.
 
 ## Secrets (environment only)
 
-DevMemory never stores a credential in a file, a log, the database, a commit, or
-an API response. These are read from the environment at the moment they're used:
+DevMemory never stores a credential in a *committed* file, a log, the database, a
+commit, or an API response. These are read from the environment at the moment
+they're used.
+
+The `devmemory` CLI loads a **`.env`** file if it finds one (searched from the
+current directory upward). Real environment variables always take precedence —
+`.env` never overrides them. Copy the template and fill in what you need:
+
+```bash
+cp .env.example .env
+```
+
+`.env` is git-ignored; `.env.example` is the committed template.
 
 | Variable | Used for |
 | --- | --- |

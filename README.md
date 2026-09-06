@@ -89,6 +89,9 @@ See [`DEMO.md`](DEMO.md) for the walk-through and
 checkpoint` collects tests and metrics only once you point it at them — set
 `tests.command` and `metrics.file` in `.devmemory/config.json`.
 
+Credentials (LLM keys, Databricks) are read from the environment — `cp
+.env.example .env` and fill in what you need; the CLI loads it automatically.
+
 ## What it is not
 
 DevMemory sits *beside* your tools. It is not an IDE, a version-control system,
