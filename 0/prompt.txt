@@ -1,0 +1,129 @@
+give me a straight up answer without changing the codebase, how do i run/test it manually? the projet?
+
+---
+
+:\Hackathons\TechWeek> .venv\Scripts\activate
+(.venv) PS D:\Hackathons\TechWeek> pytest -n auto
+bringing up nodes...
+......................................................................................................................................................... [ 71%]
+..............................................F...............                                   [100%]
+=========================================================================== FAILURES ===========================================================================
+_____________________________________________________________ test_cli_databricks_status_and_push ______________________________________________________________
+[gw15] win32 -- Python 3.14.6 D:\Hackathons\TechWeek\.venv\Scripts\python.exe
+
+project = ProjectContext(paths=ProjectPaths(repo_root=WindowsPath('C:/Users/BANU/AppData/Local/Temp/pytest-of-BANU/pytest-123/po...ntireAdapter object at 0x00000223E25EA690>, graph=<devmemory.adapters.graph.GraphAdapter object at 0x00000223E25EA580>)
+git_repo = TmpGitRepo(path=WindowsPath('C:/Users/BANU/AppData/Local/Temp/pytest-of-BANU/pytest-123/popen-gw15/test_cli_databricks_status_and0'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000223E279C640>
+
+    def test_cli_databricks_status_and_push(
+        project: ProjectContext, git_repo: TmpGitRepo, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _seed(project, git_repo, n=2)
+        project.close()
+        monkeypatch.chdir(git_repo.path)
+
+        result = runner.invoke(app, ["databricks", "status"])
+        assert result.exit_code == 0, result.output
+        assert "configured: False" in result.output
+        assert "queued: 2" in result.output
+
+        result = runner.invoke(app, ["databricks", "push"])
+        assert result.exit_code == 0, result.output
+>       assert "not configured" in result.output.lower() or "credentials are not set" in result.output
+E       assert ('not configured' in "! could not reach databricks: databricks statement did not succeed: \n[no_such_catalog_exception] catalog 'devmemory'...                                  │\n└─────────────────────────────────────────────────────────────────────────────┘\n" or 'credentials are not set' in "! could not reach Databricks: Databricks statement did not succeed: \n[NO_SUCH_CATALOG_EXCEPTION] Catalog 'devmemory'...                                  │\n└─────────────────────────────────────────────────────────────────────────────┘\n")
+E        +  where "! could not reach databricks: databricks statement did not succeed: \n[no_such_catalog_exception] catalog 'devmemory'...                      
+            │\n└─────────────────────────────────────────────────────────────────────────────┘\n" = <built-in method lower of str object at 0x00000223E0DBC3E0>()
+E        +    where <built-in method lower of str object at 0x00000223E0DBC3E0> = "! could not reach Databricks: Databricks statement did not succeed: \n[NO_SUCH_CATALOG_EXCEPTION] Catalog 'devmemory'...                                  │\n└─────────────────────────────────────────────────────────────────────────────┘\n".lower
+E        +      where "! could not reach Databricks: Databricks statement did not succeed: \n[NO_SUCH_CATALOG_EXCEPTION] Catalog 'devmemory'...                  
+                │\n└─────────────────────────────────────────────────────────────────────────────┘\n" = <Result okay>.output
+────────────────────┘\n" = <Result okay>.output
+E        +  and   "! could not reach Databricks: Databricks statement did not succeed: \n[NO_SUCH_CATALOG_EXCEPTION] Catalog 'devmemory'...                                  │\n└─────────────────────────────────────────────────────────────────────────────┘\n" = <Result okay>.output
+
+D:\Hackathons\TechWeek\tests\test_databricks.py:412: AssertionError
+=================================================================== short test summary info ====================================================================
+FAILED tests/test_databricks.py::test_cli_databricks_status_and_push - assert ('not configured' in "! could not reach databricks: databricks statement did not succeed: \n[no_such_catalog_exception] catalog 'devmemory'...       ...        
+1 failed, 214 passed in 66.64s (0:01:06)
+(.venv) PS D:\Hackathons\TechWeek>
+
+---
+
+(.venv) PS D:\Hackathons\TechWeek> python examples/demo/seed.py C:\Users\BANU\AppData\Local\Temp\devmemory-demo
+2026-09-06T04:39:10.260159Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T04:39:10.270548Z [info     ] version.created                checkpoint=None commit=16b78bd9b6c3 status=SUCCESS version=v1
+2026-09-06T04:39:10.974142Z [info     ] artifact.created               bytes=877 files=6 path=C:\Users\BANU\AppData\Local\Temp\devmemory-demo\.devmemory\artifacts\v1_16b78bd.tar.gz version=v1
+2026-09-06T04:39:10.977626Z [info     ] checkpoint.done                run_id=235ea0ad5b0342de944417faf0ee2e9d status=SUCCESS version=v1
+2026-09-06T04:39:12.427550Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T04:39:12.437623Z [info     ] version.created                checkpoint=None commit=9f7f608e7ca1 status=REGRESSION version=v2
+2026-09-06T04:39:12.952690Z [info     ] artifact.created               bytes=928 files=6 path=C:\Users\BANU\AppData\Local\Temp\devmemory-demo\.devmemory\artifacts\v2_9f7f608.tar.gz version=v2
+2026-09-06T04:39:12.955599Z [info     ] checkpoint.done                run_id=c2de674ae06042dcaa57d8f81ddb36ee status=REGRESSION version=v2
+2026-09-06T04:39:14.493970Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T04:39:14.499881Z [info     ] version.created                checkpoint=None commit=236c5ef4d67d status=REGRESSION version=v3
+2026-09-06T04:39:15.108290Z [info     ] artifact.created               bytes=930 files=6 path=C:\Users\BANU\AppData\Local\Temp\devmemory-demo\.devmemory\artifacts\v3_236c5ef.tar.gz version=v3
+2026-09-06T04:39:15.115360Z [info     ] checkpoint.done                run_id=520b4b01969747a2990d7c9cad32e7d3 status=REGRESSION version=v3
+2026-09-06T04:39:16.825482Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T04:39:16.832791Z [info     ] version.created                checkpoint=None commit=584eb09be6a3 status=SUCCESS version=v4
+2026-09-06T04:39:17.312293Z [info     ] artifact.created               bytes=935 files=6 path=C:\Users\BANU\AppData\Local\Temp\devmemory-demo\.devmemory\artifacts\v4_584eb09.tar.gz version=v4
+2026-09-06T04:39:17.318398Z [info     ] checkpoint.done                run_id=559c9b9c163341a1a584b6f4f1650c2a status=SUCCESS version=v4
+2026-09-06T04:39:19.039470Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T04:39:19.054092Z [info     ] version.created                checkpoint=None commit=808e24f05ca6 status=SUCCESS version=v5
+2026-09-06T04:39:19.612412Z [info     ] artifact.created               bytes=958 files=6 path=C:\Users\BANU\AppData\Local\Temp\devmemory-demo\.devmemory\artifacts\v5_808e24f.tar.gz version=v5
+2026-09-06T04:39:19.615658Z [info     ] checkpoint.done                run_id=717e600ff73d48aba0c1b618473c2bb9 status=SUCCESS version=v5
+2026-09-06T04:39:21.277910Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T04:39:21.288257Z [info     ] version.created                checkpoint=None commit=16daa70f7d69 status=SUCCESS version=v6
+2026-09-06T04:39:21.904070Z [info     ] artifact.created               bytes=961 files=6 path=C:\Users\BANU\AppData\Local\Temp\devmemory-demo\.devmemory\artifacts\v6_16daa70.tar.gz version=v6
+2026-09-06T04:39:21.906680Z [info     ] checkpoint.done                run_id=9c1957c3592f4f8ba3c29cdba1da20a7 status=SUCCESS version=v6
+
+Done. C:\Users\BANU\AppData\Local\Temp\devmemory-demo
+
+  cd C:\Users\BANU\AppData\Local\Temp\devmemory-demo
+  devmemory history
+  devmemory analytics
+  devmemory serve
+(.venv) PS D:\Hackathons\TechWeek> devmememory history
+devmememory : The term 'devmememory' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was 
+included, verify that the path is correct and try again.
+At line:1 char:1
++ devmememory history
++ ~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (devmememory:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+(.venv) PS D:\Hackathons\TechWeek> cd C:\Users\BANU\AppData\Local\Temp\devmemory-demo
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\devmemory-demo> devmememory history
+devmememory : The term 'devmememory' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was 
+included, verify that the path is correct and try again.
+At line:1 char:1
++ devmememory history
++ ~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (devmememory:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\devmemory-demo>
+
+---
+
+ok so i am not very satisfied with the dashboard's ui and stuff, lets work on making that perfect and something that the users would actually use
+
+---
+
+continue, dont wait for my approvals, i trust you to get the jo done
+
+---
+
+<task-notification>
+<task-id>bqnkifvrz</task-id>
+<tool-use-id>toolu_01X1cfN6o6uH7NvtKA1roUSx</tool-use-id>
+<output-file>C:\Users\BANU\AppData\Local\Temp\claude\d--Hackathons-TechWeek\fcec3b82-fe78-4cb6-b1dc-40e4f8a72893\tasks\bqnkifvrz.output</output-file>
+<status>completed</status>
+<summary>Background command "cd src/devmemory/web/frontend &amp;&amp; npm install --no-audit --no-fund 2&gt;&amp;1 | tail -20" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b9xuta7kj</task-id>
+<tool-use-id>toolu_01ANJqUGsGsv5knESB4sAsXr</tool-use-id>
+<output-file>C:\Users\BANU\AppData\Local\Temp\claude\d--Hackathons-TechWeek\fcec3b82-fe78-4cb6-b1dc-40e4f8a72893\tasks\b9xuta7kj.output</output-file>
+<status>completed</status>
+<summary>Background command "D:/Hackathons/TechWeek/.venv/Scripts/python.exe -m pytest -q -p no:xdist 2&gt;&amp;1 | tail -20" completed (exit code 0)</summary>
+</task-notification>
