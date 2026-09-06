@@ -1,0 +1,255 @@
+how to test it?
+
+gimme straight forward answer
+
+---
+
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\devmemory-demo> python examples/demo/seed.py C:/Users/BANU/AppData/Local/Temp/tl-demo
+D:\Hackathons\TechWeek\.venv\Scripts\python.exe: can't open file 'C:\\Users\\BANU\\AppData\\Local\\Temp\\devmemory-demo\\examples\\demo\\seed.py': [Errno 2] No such file or directory
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\devmemory-demo>
+
+---
+
+ok it openeda new window, now what do i do
+
+---
+
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\devmemory-demo> cd D:\Hackathons\TechWeek
+>> python examples/demo/seed.py C:/Users/BANU/AppData/Local/Temp/tl-demo
+2026-09-06T07:04:42.962885Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T07:04:42.979072Z [info     ] version.created                checkpoint=None commit=b8506a7f9de9 status=SUCCESS version=v1
+2026-09-06T07:04:43.396995Z [info     ] artifact.created               bytes=875 files=6 path=C:\Users\BANU\AppData\Local\Temp\tl-demo\.devmemory\artifacts\v1_b8506a7.tar.gz version=v1
+2026-09-06T07:04:43.400003Z [info     ] checkpoint.done                run_id=996b18bbaceb4e759bc371fac01d9937 status=SUCCESS version=v1
+2026-09-06T07:04:44.683182Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T07:04:44.691341Z [info     ] version.created                checkpoint=None commit=1e24bf0b876c status=REGRESSION version=v2
+2026-09-06T07:04:45.148706Z [info     ] artifact.created               bytes=929 files=6 path=C:\Users\BANU\AppData\Local\Temp\tl-demo\.devmemory\artifacts\v2_1e24bf0.tar.gz version=v2
+2026-09-06T07:04:45.152098Z [info     ] checkpoint.done                run_id=5c5ab981593641b4bdff03d06ac5fdba status=REGRESSION version=v2
+2026-09-06T07:04:46.612953Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T07:04:46.622162Z [info     ] version.created                checkpoint=None commit=ec7fcf07f0dc status=REGRESSION version=v3
+2026-09-06T07:04:47.200597Z [info     ] artifact.created               bytes=926 files=6 path=C:\Users\BANU\AppData\Local\Temp\tl-demo\.devmemory\artifacts\v3_ec7fcf0.tar.gz version=v3
+2026-09-06T07:04:47.203939Z [info     ] checkpoint.done                run_id=8055bd4b866144c7bf8e3d52c547cd36 status=REGRESSION version=v3
+2026-09-06T07:04:48.522615Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T07:04:48.532201Z [info     ] version.created                checkpoint=None commit=94a10b1a5c11 status=SUCCESS version=v4
+2026-09-06T07:04:48.906794Z [info     ] artifact.created               bytes=934 files=6 path=C:\Users\BANU\AppData\Local\Temp\tl-demo\.devmemory\artifacts\v4_94a10b1.tar.gz version=v4
+2026-09-06T07:04:48.909711Z [info     ] checkpoint.done                run_id=c29cbb915dee469b95e382e39931e46b status=SUCCESS version=v4
+2026-09-06T07:04:50.232561Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T07:04:50.238439Z [info     ] version.created                checkpoint=None commit=c0e4e61eec40 status=SUCCESS version=v5
+2026-09-06T07:04:50.573637Z [info     ] artifact.created               bytes=954 files=6 path=C:\Users\BANU\AppData\Local\Temp\tl-demo\.devmemory\artifacts\v5_c0e4e61.tar.gz version=v5
+2026-09-06T07:04:50.576221Z [info     ] checkpoint.done                run_id=0f515fab185d4bbfb78bd3ed4cc4bd9f status=SUCCESS version=v5
+2026-09-06T07:04:51.957913Z [info     ] metrics.collected              count=1 names=['quote_latency_ms']
+2026-09-06T07:04:51.968252Z [info     ] version.created                checkpoint=None commit=368372b17319 status=SUCCESS version=v6
+2026-09-06T07:04:52.372223Z [info     ] artifact.created               bytes=964 files=6 path=C:\Users\BANU\AppData\Local\Temp\tl-demo\.devmemory\artifacts\v6_368372b.tar.gz version=v6
+2026-09-06T07:04:52.375183Z [info     ] checkpoint.done                run_id=1d1b1a000f0a4caabbe09b0f874cd8eb status=SUCCESS version=v6
+
+Done. C:\Users\BANU\AppData\Local\Temp\tl-demo
+
+  cd C:\Users\BANU\AppData\Local\Temp\tl-demo
+  devmemory history
+  devmemory analytics
+  devmemory serve
+(.venv) PS D:\Hackathons\TechWeek> cd C:/Users/BANU/AppData/Local/Temp/tl-demo
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo> cd D:\Hackathons\TechWeek
+(.venv) PS D:\Hackathons\TechWeek> Get-ChildItem examples -Recurse -Filter *.py
+
+
+    Directory: D:\Hackathons\TechWeek\examples\demo
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        06-09-2026  07:24 AM           7460 seed.py
+
+
+(.venv) PS D:\Hackathons\TechWeek> cd D:\Hackathons\TechWeek
+>> 
+(.venv) PS D:\Hackathons\TechWeek> python examples/demo/seed.py C:/Users/BANU/AppData/Local/Temp/tl-demo
+>>
+C:\Users\BANU\AppData\Local\Temp\tl-demo exists - delete and recreate? [y/N] n
+aborted
+(.venv) PS D:\Hackathons\TechWeek> cd C:/Users/BANU/AppData/Local/Temp/tl-demo
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo> devmemory task new "Add a round_money helper to pricing/core.py and a test for it" --test "python -m pytest -q"
+TASK-001 created  ·  1 requirements
+  R1  Add a round_money helper to pricing/core.py and a test for it
+
+╭─ state ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ TASK           TASK-001  Add a round_money helper to pricing/core.py and a test for it                                         │
+│ STATUS         NEEDS_WORK                                                                                                                                                       │
+│ REQUIREMENTS   0 / 1                                         │
+│ CHECKPOINT     none                                         │
+│ COMMIT         368372b17319  perf(pricing): fold rounding into cart_total                                         │
+│ FILES CHANGED  0  (+0/-0)                                         │
+│ TESTS          0 passed / 0 failed  (FAILED_TO_PARSE)                                         │
+│ IMPACT         2 files / 0 tests                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+      requirement
+INCO  R1 Add a round_money helper to pricing/core.py and a test for it  no implementation evidence in the diff for this requirement
+
+NEXT FOCUS
+  - Add tests, or set tests.parser / tests.command
+  - R1: Add a round_money helper to pricing/core.py and a test for it
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo> devmemory task state
+╭─ state ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ TASK           TASK-001  Add a round_money helper to pricing/core.py and a test for it                                         │
+│ STATUS         NEEDS_WORK                                                                                                                                                       │
+│ REQUIREMENTS   0 / 1                                         │
+│ CHECKPOINT     none                                         │
+│ COMMIT         368372b17319  perf(pricing): fold rounding into cart_total                                         │
+│ FILES CHANGED  0  (+0/-0)                                         │
+│ TESTS          0 passed / 0 failed  (FAILED_TO_PARSE)                                         │
+│ IMPACT         2 files / 0 tests                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+      requirement                                                                                                                  
+INCO  R1 Add a round_money helper to pricing/core.py and a test for it  no implementation evidence in the diff for this requirement
+
+NEXT FOCUS
+  - Add tests, or set tests.parser / tests.command
+  - R1: Add a round_money helper to pricing/core.py and a test for it
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo> # 3. add a trivial helper + test, commit
+>> Add-Content pricing/core.py "`n`ndef round_money(x):`n    return round(x, 2)`n"
+>> New-Item -ItemType Directory -Force tests | Out-Null
+>> Set-Content tests/test_round.py "from pricing.core import round_money`n`ndef test_round_money():`n    assert round_money(1.005) == 1.0`n"
+>> git add -A; git commit -m "feat: add round_money helper + test"
+>>
+>> # 4. record your verdict + refresh
+>> devmemory task requirement R1 -s complete -m "added round_money"
+>> devmemory task refresh
+>>
+>> # 5. see it now — expect READY
+>> devmemory task state
+>> devmemory task history
+>>
+warning: in the working copy of 'pricing/core.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_round.py', LF will be replaced by CRLF the next time Git touches it
+[main b352380] feat: add round_money helper + test
+ 2 files changed, 10 insertions(+)
+ create mode 100644 tests/test_round.py
+╭─ state ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ TASK           TASK-001  Add a round_money helper to pricing/core.py and a test for it                                         │
+│ STATUS         NEEDS_WORK                                                                                                                                                       │
+│ REQUIREMENTS   1 / 1                                         │
+│ CHECKPOINT     none                                         │
+│ COMMIT         b3523803d2d7  feat: add round_money helper + test  (dirty)                                                                                                       │
+│ FILES CHANGED  2  (+10/-0)                                         │
+│ TESTS          1 passed / 0 failed  (PASSED)                                         │
+│ IMPACT         2 files / 1 tests                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+      requirement                                                                        
+COMP  R1 Add a round_money helper to pricing/core.py and a test for it  added round_money
+
+NEXT FOCUS
+  - Commit the current changes
+╭─ state ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ TASK           TASK-001  Add a round_money helper to pricing/core.py and a test for it                                         │
+│ STATUS         NEEDS_WORK                                                                                                                                                       │
+│ REQUIREMENTS   1 / 1                                         │
+│ CHECKPOINT     none                                         │
+│ COMMIT         b3523803d2d7  feat: add round_money helper + test  (dirty)                                                                                                       │
+│ FILES CHANGED  2  (+10/-0)                                         │
+│ TESTS          1 passed / 0 failed  (PASSED)                                         │
+│ IMPACT         2 files / 1 tests                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+      requirement                                                                        
+COMP  R1 Add a round_money helper to pricing/core.py and a test for it  added round_money
+
+NEXT FOCUS
+  - Commit the current changes
+╭─ state ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ TASK           TASK-001  Add a round_money helper to pricing/core.py and a test for it                                         │
+│ STATUS         NEEDS_WORK                                                                                                                                                       │
+│ REQUIREMENTS   1 / 1                                         │
+│ CHECKPOINT     none                                         │
+│ COMMIT         b3523803d2d7  feat: add round_money helper + test  (dirty)                                                                                                       │
+│ FILES CHANGED  2  (+10/-0)                                         │
+│ TESTS          1 passed / 0 failed  (PASSED)                                         │
+│ IMPACT         2 files / 1 tests                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+      requirement                                                                        
+COMP  R1 Add a round_money helper to pricing/core.py and a test for it  added round_money
+
+NEXT FOCUS
+  - Commit the current changes
+#  when         status      commit    tests  reqs done
+1  09-06 07:08  NEEDS_WORK  368372b1  0/0          0/1
+2  09-06 07:09  NEEDS_WORK  b3523803  1/0          1/1
+3  09-06 07:09  NEEDS_WORK  b3523803  1/0          1/1
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo>
+
+---
+
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo>
+                                                     git status --porcelain
+?? pricing/__pycache__/
+?? tests/__pycache__/
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo>
+
+---
+
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo> devmemory task state
+╭─ state ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ TASK           TASK-001  Add a round_money helper to pricing/core.py and a test for it                                                                                          │
+│ STATUS         READY                                                                                                                                                            │
+│ REQUIREMENTS   1 / 1                                                                                                                                                            │
+│ CHECKPOINT     none                                                                                                                                                             │
+│ COMMIT         2ebe9eb173b4  chore: ignore __pycache__                                                                                                                          │
+│ FILES CHANGED  3  (+14/-0)                                                                                                                                                      │
+│ TESTS          1 passed / 0 failed  (PASSED)                                                                                                                                    │
+│ IMPACT         1 files / 0 tests                                                                                                                                                │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+      requirement                                                                        
+COMP  R1 Add a round_money helper to pricing/core.py and a test for it  added round_money
+
+FINDINGS
+  - All requirements satisfied; tests pass
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo> devmemory task new
+Usage: devmemory task new [OPTIONS] {goal}
+Try 'devmemory task new -h' for help.
+╭─ Error ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Missing argument 'goal'.                                                                                                                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo> devmemory server
+Usage: devmemory [OPTIONS] COMMAND [ARGS]...
+Try 'devmemory -h' for help.
+╭─ Error ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ No such command 'server'. Did you mean 'serve'?                                                                                                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+(.venv) PS C:\Users\BANU\AppData\Local\Temp\tl-demo>
+
+---
+
+where is the pipeline that fetches outputs and tracks progress and suggests prompts in the webserver?
+
+---
+
+do it and do it properly
+
+---
+
+i dont have a lot of time, do it quickly
+
+---
+
+<task-notification>
+<task-id>b5uyylzkg</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>C:\Users\BANU\AppData\Local\Temp\claude\d--Hackathons-TechWeek\fcec3b82-fe78-4cb6-b1dc-40e4f8a72893\tasks\b5uyylzkg.output</output-file>
+<status>completed</status>
+<summary>Background command ".venv/Scripts/python.exe -m pytest tests/test_api_tasks.py tests/test_taskloop.py tests/test_mcp.py tests/test_api.py -q 2&gt;&amp;1 | grep -vE '"event"|migration' | tail -6" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+changes, risks, analysis and diff pages are not working, its empty, fix that
+
+---
+
+do it quickly
+
+---
+
+do it quickly
+
+---
+
+changes, risks, analysis and diff pages are showing this.
+
+http://127.0.0.1:8760/#/version/v1
