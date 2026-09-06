@@ -29,9 +29,19 @@ def doctor_command(
     strict: Annotated[
         bool, typer.Option("--strict", help="Exit non-zero if any check is not ok.")
     ] = False,
+    fix: Annotated[
+        bool,
+        typer.Option(
+            "--fix",
+            help="Enable Entire in this repo and install the graph plugin if they are missing.",
+        ),
+    ] = False,
 ) -> None:
     """Diagnose the DevMemory environment: toolchain, project, storage, integrations."""
     rows: list[tuple[str, str, str]] = []
+
+    if fix:
+        _autofix_entire()
 
     # -- toolchain -----------------------------------------------------
     py = platform.python_version()
@@ -48,6 +58,17 @@ def doctor_command(
     rows.append(
         ("entire graph", _OK if graph else _MISS, graph or "not installed (impact optional)")
     )
+    if entire:
+        enabled = _entire_enabled()
+        rows.append(
+            (
+                "entire repo",
+                _OK if enabled else _WARN,
+                "enabled - sessions are captured"
+                if enabled
+                else "not enabled here - run `entire enable` (or `devmemory doctor --fix`)",
+            )
+        )
 
     # -- project -----------------------------------------------------
     paths = find_project_paths()
@@ -104,6 +125,40 @@ def _render(rows: list[tuple[str, str, str]]) -> None:
         table.add_row(name, state, detail)
     console.print()
     console.print(table)
+
+
+def _entire_bin() -> str | None:
+    return shutil.which("entire") or _fallback("entire")
+
+
+def _entire_enabled() -> bool:
+    exe = _entire_bin()
+    if not exe:
+        return False
+    try:
+        out = subprocess.run(  # noqa: S603
+            [exe, "status"], capture_output=True, text=True, timeout=15, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    text = (out.stdout + out.stderr).lower()
+    return "not set up" not in text and "not enabled" not in text and "disabled" not in text
+
+
+def _autofix_entire() -> None:
+    exe = _entire_bin()
+    if not exe:
+        console.print("[yellow]entire CLI not found - nothing to fix.[/yellow]")
+        return
+    if not _entire_enabled():
+        console.print("enabling Entire in this repo ...")
+        subprocess.run([exe, "enable"], check=False)  # noqa: S603
+    from devmemory.adapters.graph import _find_binary as _find_graph
+
+    if _find_graph() is None:
+        console.print("installing the entire graph plugin ...")
+        subprocess.run([exe, "plugin", "install", "graph"], check=False)  # noqa: S603
+    console.print("[green]done - re-run `devmemory doctor` to confirm.[/green]\n")
 
 
 def _pyver_ok(version: str) -> bool:

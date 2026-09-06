@@ -159,6 +159,23 @@ def build_server(repo_path: Path | str | None = None) -> FastMCP:
         return version_impact(ctx(), ref)
 
     @mcp.tool
+    def graph_search(query: str, top_k: int = 5) -> list[dict[str, object]]:
+        """Find the code for a task from a plain-language description, via the
+        Entire `graph` plugin: ranked source regions with file:line, symbol name,
+        and signature. Empty list if the plugin is not installed. Use this to
+        locate the right edit site before changing code."""
+        return [h.model_dump() for h in ctx().graph.search(query, top_k=top_k)]
+
+    @mcp.tool
+    def symbol_blast_radius(symbol: str) -> dict[str, object] | None:
+        """Everything downstream of one symbol (Entire `graph` plugin): direct +
+        transitive callers, callees, type consumers, co-changing files. ``symbol``
+        is a name or ``path/to/file.py:line``. Run before changing a function or
+        type's behaviour. ``None`` if the plugin is not installed."""
+        si = ctx().graph.symbol_impact(symbol)
+        return si.model_dump() if si is not None else None
+
+    @mcp.tool
     def get_analytics() -> AnalyticsSummary:
         """Development intelligence across all versions: regression leaderboard,
         feature attempts, file churn, agent effectiveness, trend, and

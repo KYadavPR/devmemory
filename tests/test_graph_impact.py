@@ -191,6 +191,40 @@ def test_symbol_impact_ambiguous_is_unresolved(monkeypatch: pytest.MonkeyPatch) 
     assert len(si.definitions) == 2
 
 
+def test_graph_search_parses_results(monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = {
+        "query": "round money",
+        "results": [
+            {
+                "file_path": "pkg/core.py",
+                "start_line": 29,
+                "end_line": 30,
+                "symbol_name": "round_money",
+                "signature": "def round_money(x)",
+                "kind": "function",
+                "score": 29.5,
+                "snippet": "def round_money(x):\n    return round(x, 2)",
+            }
+        ],
+    }
+    calls: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **_kw: object) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return _fake_proc(json.dumps(payload))
+
+    monkeypatch.setattr(graph_mod.subprocess, "run", fake_run)
+    hits = GraphAdapter(".", binary="/opt/entire-graph").search("round money")
+    assert len(hits) == 1
+    assert hits[0].symbol_name == "round_money" and hits[0].file_path == "pkg/core.py"
+    assert "search" in calls[0] and "--query" in calls[0]
+
+
+def test_graph_search_empty_without_binary(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(graph_mod, "_find_binary", lambda: None)
+    assert GraphAdapter(".").search("anything") == []
+
+
 def test_diff_impact_reuses_commit_parser(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
 

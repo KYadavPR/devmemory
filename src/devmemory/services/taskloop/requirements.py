@@ -141,10 +141,33 @@ def evaluate_requirements(
 
     verdicts = _evaluate_llm(pending, git, tests, checkpoint_intent, changed, diff_excerpt, ctx)
     if verdicts is None:
+        changed_set = set(changed)
         verdicts = [
-            _evaluate_one_rule(r, tests=tests, changed=changed, diff=diff_excerpt) for r in pending
+            _evaluate_one_rule(
+                r,
+                tests=tests,
+                changed=changed,
+                diff=diff_excerpt,
+                graph_hit=_graph_confirms(ctx, r.description, changed_set),
+            )
+            for r in pending
         ]
     return done + verdicts
+
+
+def _graph_confirms(ctx: ProjectContext, description: str, changed: set[str]) -> str | None:
+    """A code-graph search for the requirement's concept that lands inside a file
+    the task actually changed - strong evidence the implementation exists."""
+    if not ctx.graph.is_available or _TESTS_HINT.search(description):
+        return None
+    try:
+        for hit in ctx.graph.search(description, top_k=5):
+            if hit.file_path and hit.file_path in changed and hit.score > 0:
+                where = hit.symbol_name or hit.file_path
+                return f"graph search matched `{where}` in {hit.file_path} (changed here)"
+    except Exception as exc:  # never block evaluation on the graph
+        _log.warning("taskloop.requirements.graph_search_failed", error=str(exc))
+    return None
 
 
 def _evaluate_llm(
@@ -219,10 +242,12 @@ def _evaluate_one_rule(
     tests: StateTests,
     changed: list[str],
     diff: str,
+    graph_hit: str | None = None,
 ) -> RequirementVerdict:
-    """Deterministic fallback: keyword overlap with changed paths + diff, and a
-    real check for the 'tests pass' requirement. Conservative - it will say
-    INCOMPLETE/PARTIAL rather than claim completion it cannot see."""
+    """Deterministic fallback: keyword overlap with changed paths + diff, a live
+    code-graph search, and a real check for the 'tests pass' requirement.
+    Conservative - it will say INCOMPLETE/PARTIAL rather than claim completion it
+    cannot see."""
     desc = req.description.lower()
 
     if _TESTS_HINT.search(desc) and ("pass" in desc or "exist" in desc or "green" in desc):
@@ -248,12 +273,19 @@ def _evaluate_one_rule(
     keywords = {w for w in re.findall(r"[a-z_]{4,}", desc) if w not in _STOPWORDS}
     hay = " ".join(changed).lower() + "\n" + diff.lower()
     hits = sorted(k for k in keywords if k in hay)
-    if not keywords:
+    strong_keywords = len(hits) >= max(2, len(keywords) // 2)
+    if not keywords and not graph_hit:
         status, reason = (
             RequirementStatus.UNKNOWN,
             "requirement not keyword-checkable; inspect repo",
         )
-    elif len(hits) >= max(2, len(keywords) // 2):
+    elif graph_hit and strong_keywords:
+        status = RequirementStatus.PARTIAL
+        reason = f"{graph_hit}; keyword match on {', '.join(hits)} - verify behaviour + tests"
+    elif graph_hit:
+        status = RequirementStatus.PARTIAL
+        reason = f"{graph_hit} - verify behaviour + tests"
+    elif strong_keywords:
         status = RequirementStatus.PARTIAL
         reason = f"evidence in changed code for: {', '.join(hits)} (verify behavior + tests)"
     elif hits:

@@ -98,6 +98,17 @@ class SymbolRef(BaseModel):
     via: str | None = None  # intermediate symbol on a 2-hop path
 
 
+class GraphHit(BaseModel):
+    file_path: str
+    start_line: int | None = None
+    end_line: int | None = None
+    symbol_name: str | None = None
+    signature: str | None = None
+    kind: str | None = None
+    score: float = 0.0
+    snippet: str | None = None
+
+
 class SymbolImpact(BaseModel):
     """`entire graph impact` for one symbol: who breaks if you change it."""
 
@@ -237,6 +248,47 @@ class GraphAdapter:
             _log.warning("graph.bad_json", symbol=symbol)
             return None
         return _parse_symbol_impact(symbol, data)
+
+    def search(self, query: str, *, top_k: int = 5) -> list[GraphHit]:
+        """Ranked source regions for a plain-language description (`entire graph
+        search`). Empty list when the plugin is missing or nothing matches."""
+        if self._binary is None or not query.strip():
+            return []
+        proc = self._run(
+            "search",
+            "--query",
+            query,
+            "--format",
+            "json",
+            "--top-k",
+            str(top_k),
+            "--profile",
+            "fast",
+            timeout=self._timeout,
+        )
+        if proc is None or proc.returncode != 0 or not proc.stdout.strip():
+            return []
+        try:
+            data = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            return []
+        hits: list[GraphHit] = []
+        for r in data.get("results", []) if isinstance(data, dict) else []:
+            if not isinstance(r, dict):
+                continue
+            hits.append(
+                GraphHit(
+                    file_path=str(r.get("file_path") or ""),
+                    start_line=_opt_int(r.get("start_line")),
+                    end_line=_opt_int(r.get("end_line")),
+                    symbol_name=_opt_str(r.get("symbol_name")),
+                    signature=_opt_str(r.get("signature")),
+                    kind=_opt_str(r.get("kind")),
+                    score=float(r.get("score") or 0.0),
+                    snippet=_opt_str(r.get("snippet")),
+                )
+            )
+        return hits
 
     # -- process plumbing ------------------------------------------------
 
@@ -397,6 +449,7 @@ def _find_binary() -> str | None:
 __all__ = [
     "ChangedEntity",
     "GraphAdapter",
+    "GraphHit",
     "GraphImpact",
     "GraphStatus",
     "SymbolImpact",
