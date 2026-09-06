@@ -274,7 +274,12 @@ def _try_databricks(ctx: ProjectContext) -> AnalyticsSummary | None:
     if n == 0:
         return None
     successes = sum(1 for r in rows if r.get("status") == "SUCCESS")
-    regr = sum(1 for r in rows if r.get("is_regression") or r.get("status") == "REGRESSION")
+    # the Statement Execution API returns every cell as a string ("true"/"false")
+    regr = sum(
+        1
+        for r in rows
+        if str(r.get("is_regression")).lower() == "true" or r.get("status") == "REGRESSION"
+    )
     # For the richer breakdowns Databricks would run more queries; the demo path
     # is local, so keep the remote summary to the top-line numbers plus a marker.
     local = _local_summary(ctx)

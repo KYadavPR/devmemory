@@ -153,12 +153,15 @@ class DatabricksAdapter:
 
         cols = ", ".join(_VERSION_FIELDS)
         values = ", ".join(f":{f}" for f in _VERSION_FIELDS)
+        # Spark SQL rejects a column-alias list after the subquery (`s (a, b, ...)`);
+        # alias each column inside the SELECT instead.
+        source = ", ".join(f":{f} AS {f}" for f in _VERSION_FIELDS)
         updates = ", ".join(
             f"{f} = :{f}" for f in _VERSION_FIELDS if f not in ("project_id", "version_id")
         )
         merge = (
             f"MERGE INTO {self.table('fact_versions')} t "
-            f"USING (SELECT {values}) s ({cols}) "
+            f"USING (SELECT {source}) s "
             f"ON t.project_id = s.project_id AND t.version_id = s.version_id "
             f"WHEN MATCHED THEN UPDATE SET {updates} "
             f"WHEN NOT MATCHED THEN INSERT ({cols}) VALUES ({values})"

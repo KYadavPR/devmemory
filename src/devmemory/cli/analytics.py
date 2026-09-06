@@ -125,7 +125,10 @@ def databricks_push() -> None:
     if result.failed:
         warn(f"failed: {', '.join(result.failed)} — {result.detail}")
     if not result.pushed and not result.failed:
-        console.print("[dim]nothing queued[/dim]")
+        if result.detail:
+            warn(result.detail)
+        else:
+            console.print("[dim]nothing queued[/dim]")
     if result.queued:
         console.print(Panel(", ".join(x.upper() for x in result.queued), title="still queued"))
 
