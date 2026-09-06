@@ -81,6 +81,14 @@ export function VersionDetail() {
                     key={s}
                     href={`#${s}`}
                     className={`subnav__link${activeSection === s ? " subnav__link--active" : ""}`}
+                    onClick={(e) => {
+                      // The app is hash-routed, so a bare "#section" href would
+                      // be read as a route change and land on NotFound. Scroll
+                      // the section into view ourselves instead.
+                      e.preventDefault();
+                      document.getElementById(s)?.scrollIntoView({ behavior: "smooth" });
+                      setActiveSection(s);
+                    }}
                   >
                     {label}
                   </a>
