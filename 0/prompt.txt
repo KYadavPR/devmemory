@@ -318,3 +318,17 @@ PS C:\Users\BANU\AppData\Local\Temp\tl-demo>
 
 
 i tried installing it in a different window
+
+---
+
+use databricks genie as a chatbot layer in our webapp
+
+---
+
+<task-notification>
+<task-id>bj2kyeij5</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>C:\Users\BANU\AppData\Local\Temp\claude\d--Hackathons-TechWeek\fcec3b82-fe78-4cb6-b1dc-40e4f8a72893\tasks\bj2kyeij5.output</output-file>
+<status>completed</status>
+<summary>Background command "Run relevant tests, cleanup" completed (exit code 0)</summary>
+</task-notification>
