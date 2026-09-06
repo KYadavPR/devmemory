@@ -73,12 +73,21 @@ normalized rows to Delta tables — never source, never transcripts.
 devmemory serve
 ```
 
-- **Overview / Timeline** — the six versions
-- **Version → V2** — the development trace, the diff, and the ⚠ previous-attempts
-  panel
-- **Features → Discounts** — 4 attempts, 50% success, 2 regressions
-- **Intelligence** — the analytics above, with a trend sparkline
+- **Overview** — the health headline, the ⚠ *repeated failed approach* callout
+  (V2 + V3, same file signature), and the version-health strip
+- **Timeline** — all six versions; filter to Regressions
+- **Version → V2** — the development trace, files, regressions, the previous-attempts
+  panel, the analysis, and the diff (sticky in-page nav across the top)
+- **Features → Discounts** — the attempts and the metric trajectory
+- **Safe to change?** — type `pricing/core.py` and "change the discount tier
+  logic" → **high-risk**, with the two prior failures. This is the same read the
+  MCP server gives an agent, in a form a human can use.
+- **Intelligence** — metric trend with regression markers, feature success rates,
+  churn vs. adverse changes, the regression leaderboard
 - **Memory** — search previous attempts by file / intent
+
+Press <kbd>⌘K</kbd> / <kbd>Ctrl-K</kbd> anywhere to jump to a version, feature, or
+page. The theme follows your system and can be forced with `?theme=light|dark`.
 
 ## 6. For the next AI agent
 

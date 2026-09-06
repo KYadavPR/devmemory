@@ -258,14 +258,24 @@ export interface ScatterDatum {
   label: string;
 }
 
-export function ChurnScatter({ data, height = 240 }: { data: ScatterDatum[]; height?: number }) {
+export function ChurnScatter({
+  data,
+  height = 220,
+  xLabel = "changes",
+  yLabel = "adverse",
+}: {
+  data: ScatterDatum[];
+  height?: number;
+  xLabel?: string;
+  yLabel?: string;
+}) {
   const [wrapRef, w] = useElementWidth();
   const { hover, setHover } = useHover<ScatterDatum>();
 
   const maxX = Math.max(...data.map((d) => d.x), 1);
   const maxY = Math.max(...data.map((d) => d.y), 1);
   const iw = w - PLOT.left - PLOT.right;
-  const ih = height - PLOT.top - PLOT.bottom;
+  const ih = height - PLOT.top - PLOT.bottom - 14; // leave room for the axis caption
   const px = (v: number) => PLOT.left + (v / maxX) * iw;
   const py = (v: number) => PLOT.top + ih - (v / maxY) * ih;
   const xTicks = niceTicks(maxX, 4);
@@ -283,10 +293,23 @@ export function ChurnScatter({ data, height = 240 }: { data: ScatterDatum[]; hei
           </g>
         ))}
         {xTicks.map((t) => (
-          <text key={"x" + t} x={px(t)} y={height - 8} textAnchor="middle" fontSize={11} fill="var(--text-muted)">
+          <text key={"x" + t} x={px(t)} y={PLOT.top + ih + 16} textAnchor="middle" fontSize={11} fill="var(--text-muted)">
             {t}
           </text>
         ))}
+        <text x={PLOT.left + iw / 2} y={height - 2} textAnchor="middle" fontSize={10} fill="var(--text-muted)">
+          {xLabel} →
+        </text>
+        <text
+          x={12}
+          y={PLOT.top + ih / 2}
+          textAnchor="middle"
+          fontSize={10}
+          fill="var(--text-muted)"
+          transform={`rotate(-90 12 ${PLOT.top + ih / 2})`}
+        >
+          {yLabel} →
+        </text>
         {data.map((d, i) => (
           <circle
             key={i}

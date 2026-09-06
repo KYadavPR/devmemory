@@ -143,5 +143,5 @@ def test_dashboard_index_served(client: TestClient) -> None:
     assert r.headers["content-type"].startswith("text/html")
     assert "DevMemory" in r.text
     # the built Vite bundle: index.html links a hashed JS + CSS asset under /static/
-    assert '/static/assets/' in r.text
+    assert "/static/assets/" in r.text
     assert client.get("/static/index.html").status_code == 200

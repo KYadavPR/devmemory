@@ -3,6 +3,7 @@ import { useFeatures } from "@/api/client";
 import { Async } from "@/components/Async";
 import { PageHead, StatusBadge, EmptyState } from "@/components/primitives";
 import { StatusDot } from "@/components/bits";
+import { Sparkline } from "@/components/Sparkline";
 import { featureName, vlabel } from "@/lib/format";
 
 export function Features() {
@@ -32,6 +33,14 @@ export function Features() {
               const regressions = f.history.filter(
                 (h) => h.status === "REGRESSION" || h.status === "ERROR",
               ).length;
+              const metricKey = Object.keys(f.latest_metrics)[0];
+              const series =
+                metricKey &&
+                f.history.map((h) => ({
+                  value: h.metrics[metricKey] ?? null,
+                  label: `${vlabel(h.version_id)}: ${h.metrics[metricKey]}`,
+                  adverse: h.status === "REGRESSION" || h.status === "ERROR",
+                }));
               return (
                 <Link
                   key={f.feature_id}
@@ -56,6 +65,14 @@ export function Features() {
                       </span>
                     ))}
                   </div>
+                  {series && series.filter((s) => s.value != null).length > 1 && (
+                    <div style={{ marginTop: 12 }}>
+                      <div className="muted text-xs" style={{ marginBottom: 2 }}>
+                        {metricKey}
+                      </div>
+                      <Sparkline points={series} width={320} height={40} />
+                    </div>
+                  )}
                 </Link>
               );
             })}

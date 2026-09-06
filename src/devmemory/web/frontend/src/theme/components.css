@@ -162,6 +162,11 @@
     min-width: 0;
   }
 }
+@media (max-width: 560px) {
+  .topbar__search kbd {
+    display: none;
+  }
+}
 
 /* ---- command palette ---------------------------------------------- */
 
@@ -352,7 +357,15 @@
 @media (max-width: 640px) {
   .vrow {
     grid-template-columns: 40px 1fr;
-    row-gap: 6px;
+    row-gap: 4px;
+    align-items: start;
+  }
+  /* the badge must not stretch across the free column */
+  .vrow > .badge {
+    justify-self: start;
+  }
+  .vrow__main {
+    grid-column: 1 / -1;
   }
   .vrow__sha {
     display: none;

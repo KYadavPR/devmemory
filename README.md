@@ -114,6 +114,11 @@ mypy
 pytest -n auto
 ```
 
+The dashboard is a Vite + React app in
+[`src/devmemory/web/frontend/`](src/devmemory/web/frontend/); its built bundle is
+committed to `src/devmemory/web/static/`, so `devmemory serve` never needs Node.
+Rebuild it with `npm run build` in that directory (see its `README.md`).
+
 ## License
 
 [MIT](LICENSE)
