@@ -113,10 +113,28 @@ class RegressionSettings(_Section):
 
 
 class AnalysisSettings(_Section):
-    """LLM-backed analysis. Providers are tried in order; `rules` never fails."""
+    """LLM-backed analysis. Providers are tried in order; `rules` never fails.
 
-    providers: list[str] = Field(default_factory=lambda: ["rules"])
-    model: str | None = None
+    Analysis is interpretation, kept structurally separate from facts - it can
+    never overwrite Git / Entire / test / metric data.
+    """
+
+    enabled: bool = True
+    providers: list[str] = Field(
+        default_factory=lambda: ["rules"],
+        description="Ordered fallback chain, e.g. ['anthropic', 'openai', 'rules']. "
+        "Keys come from the environment. `rules` always succeeds.",
+    )
+    model: str | None = Field(
+        default=None,
+        description="Model id for the active LLM provider (provider default otherwise).",
+    )
+    include_diff: bool = Field(
+        default=False,
+        description="Send a truncated unified diff to the LLM. Off by default - "
+        "otherwise only normalized facts leave the machine.",
+    )
+    max_diff_bytes: int = 4000
 
 
 class GraphSettings(_Section):

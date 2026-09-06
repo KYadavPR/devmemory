@@ -32,6 +32,7 @@ from devmemory.pipeline.feature_detect import detect_feature
 from devmemory.pipeline.regression import RegressionThresholds, detect_regressions
 from devmemory.pipeline.runlog import RunLog, StageRecord
 from devmemory.pipeline.status_rules import derive_status
+from devmemory.services.analysis import analyze_version
 from devmemory.services.context import ProjectContext
 from devmemory.services.databricks_sync import push_version
 from devmemory.services.features import refresh_feature_status
@@ -269,6 +270,18 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
                 except (OSError, RuntimeError) as exc:  # never fatal
                     st.status = "degraded"
                     st.detail = str(exc)
+
+        with run.stage("generate_analysis") as st:
+            if not ctx.config.analysis.enabled:
+                st.status = "skipped"
+            else:
+                try:
+                    analysis = analyze_version(ctx, version.version_id)
+                    version.analysis = analysis
+                    st.data |= {"provider": analysis.provider, "risk": analysis.risk}
+                except DevMemoryError as exc:  # never fatal - facts are already stored
+                    st.status = "degraded"
+                    st.detail = exc.message
 
         with run.stage("publish_databricks") as st:
             try:

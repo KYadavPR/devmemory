@@ -6,6 +6,29 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 13: AI analysis layer
+
+- `devmemory.analysis`: a provider fallback chain that turns one version's
+  normalized facts into an `Analysis` (summary / reasoning / recommendation /
+  warnings / risk). `AnalysisInput` is the only thing a provider sees — Git
+  stats, test/metric deltas, regressions, prior attempts, graph hotspots — never
+  raw source (a truncated diff only if `analysis.include_diff` is set) and never
+  a transcript.
+- `RulesProvider` — deterministic, offline, never fails; always the tail of the
+  chain. `LLMProvider` — Anthropic / OpenAI / Gemini, one class, lazy SDK import,
+  key from the environment; any failure falls through.
+- `fact_guard`: runs on every provider's output — clamps `risk` to
+  low/medium/high, forces it to at least `medium` when the recorded status is
+  adverse, sets `provider`/`model` itself (the model can't spoof them), and
+  secret-scrubs + length-caps all free text. Analysis is stored in its own table
+  and structurally cannot carry a fact field.
+- Pipeline stage `generate_analysis` (after `collect_graph_impact`) — skipped
+  when `analysis.enabled = false`, degraded (never fatal) on failure; the version
+  and its facts are already persisted.
+- CLI `devmemory analyze <ref>` (`--provider`, `--no-save`, `--json`).
+- API `POST /api/versions/{ref}/analysis` re-runs the chain. `redact_secrets`
+  helper added to `logging`.
+
 ### Added — Phase 12: change-impact analysis (Entire `graph` plugin)
 
 - `GraphAdapter`: wraps `entire graph commit --json` (the official, no-egress

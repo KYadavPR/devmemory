@@ -133,4 +133,16 @@ def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
     return structlog.get_logger(name)  # type: ignore[no-any-return]
 
 
-__all__ = ["configure_logging", "get_logger"]
+def redact_secrets(text: str) -> str:
+    """Replace any live environment-secret value found in ``text``.
+
+    Used before text produced by an external LLM is stored or displayed.
+    """
+    out = text
+    for secret in _live_secret_values():
+        if secret in out:
+            out = out.replace(secret, _REDACTED)
+    return out
+
+
+__all__ = ["configure_logging", "get_logger", "redact_secrets"]

@@ -28,7 +28,12 @@ from devmemory.api.schemas import (
     VersionListItem,
 )
 from devmemory.domain.errors import DevMemoryError
-from devmemory.domain.models import CheckpointReference, DevelopmentVersion, EntireStatus
+from devmemory.domain.models import (
+    Analysis,
+    CheckpointReference,
+    DevelopmentVersion,
+    EntireStatus,
+)
 from devmemory.services.agent_context import (
     ChangeGuidance,
     ProjectBrief,
@@ -37,6 +42,7 @@ from devmemory.services.agent_context import (
     project_brief,
     recent_history,
 )
+from devmemory.services.analysis import analyze_version
 from devmemory.services.analytics import AnalyticsSummary, analytics_summary
 from devmemory.services.context import ProjectContext
 from devmemory.services.features import get_feature, list_features
@@ -153,6 +159,11 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.get("/api/versions/{ref}/trace", response_model=DevelopmentTrace)
     def version_trace(ctx: Ctx, ref: str) -> DevelopmentTrace:
         return development_trace(ctx, ref)
+
+    @app.post("/api/versions/{ref}/analysis", response_model=Analysis)
+    def regenerate_analysis(ctx: Ctx, ref: str) -> Analysis:
+        """Re-run the analysis provider chain for a version (interpretation only)."""
+        return analyze_version(ctx, ref)
 
     @app.get("/api/versions/{ref}/impact", response_model=GraphImpact)
     def version_impact_endpoint(ctx: Ctx, ref: str) -> GraphImpact:
