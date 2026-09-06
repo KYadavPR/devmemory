@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "devmemory"
+name = "devmemory-cli"
 dynamic = ["version"]
 description = "Development-memory and version-intelligence for AI-assisted software development"
 readme = "README.md"

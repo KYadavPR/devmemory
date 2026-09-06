@@ -16,6 +16,8 @@ import type {
   TaskSummary,
   SnapshotSummary,
   ProjectBriefDoc,
+  GenieStatus,
+  GenieAnswer,
 } from "./types";
 
 const BASE = "/api";
@@ -156,6 +158,22 @@ export const useSearch = (q: string) =>
 
 export const checkChange = (files: string[], intent: string, feature?: string) =>
   apiPost<ChangeGuidance>("/agent/check", { files, intent: intent || null, feature: feature || null });
+
+// --- Genie chat (Databricks) ----------------------------------------------
+
+export const useGenieStatus = (opts?: QOpts<GenieStatus>) =>
+  useQuery({
+    queryKey: ["genie-status"],
+    queryFn: () => apiGet<GenieStatus>("/genie/status"),
+    staleTime: 60_000,
+    ...opts,
+  });
+
+export const askGenie = (question: string, conversationId: string | null) =>
+  apiPost<GenieAnswer>("/genie/ask", {
+    question,
+    conversation_id: conversationId,
+  });
 
 // --- project brief (single source of truth) --------------------------------
 

@@ -5,6 +5,7 @@ import { Logo } from "./Logo";
 
 const NAV: { to: string; label: string; icon: IconName }[] = [
   { to: "/", label: "Overview", icon: "overview" },
+  { to: "/ask", label: "Ask", icon: "sparkles" },
   { to: "/tasks", label: "Tasks", icon: "target" },
   { to: "/timeline", label: "Timeline", icon: "timeline" },
   { to: "/features", label: "Features", icon: "features" },

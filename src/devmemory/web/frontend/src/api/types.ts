@@ -520,3 +520,23 @@ export interface ProjectBriefDoc {
   content: string;
   updated_at: string | null;
 }
+
+export interface GenieStatus {
+  configured: boolean;
+  space_id: string | null;
+  reason: string | null;
+}
+
+export interface GenieAnswer {
+  conversation_id: string | null;
+  message_id: string | null;
+  question: string;
+  text: string | null;
+  sql: string | null;
+  sql_description: string | null;
+  columns: string[];
+  rows: unknown[][];
+  row_count: number | null;
+  truncated: boolean;
+  error: string | null;
+}

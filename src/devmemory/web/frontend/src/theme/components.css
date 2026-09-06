@@ -965,3 +965,93 @@ textarea.input {
   max-height: 320px;
   overflow-y: auto;
 }
+
+/* Genie chat ("Ask") */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  min-height: 340px;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+}
+.chat__empty {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.chat__suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  max-width: 560px;
+}
+.chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.chat__msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 82%;
+}
+.chat__msg--user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.chat__msg--genie {
+  align-self: flex-start;
+  max-width: 100%;
+  width: 100%;
+}
+.chat__role {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.chat__msg--user .chat__body {
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--r-2);
+  padding: 8px 12px;
+  white-space: pre-wrap;
+}
+.chat__msg--genie .chat__body {
+  background: var(--surface-2, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  padding: 12px 14px;
+  font-size: 0.9375rem;
+}
+.chat__sql summary {
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.chat__sql[open] summary {
+  margin-bottom: 8px;
+}
+.chat__input {
+  display: flex;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+.chat__input .input {
+  flex: 1;
+}

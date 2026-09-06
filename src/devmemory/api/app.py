@@ -17,12 +17,15 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from devmemory.__about__ import __version__
+from devmemory.adapters.genie import GenieAdapter, GenieAnswer, GenieUnavailableError
 from devmemory.adapters.graph import GraphImpact
 from devmemory.api import mappers
 from devmemory.api.schemas import (
     AgentCheckRequest,
     ComparisonResponse,
     FeatureDetail,
+    GenieAskRequest,
+    GenieStatus,
     IssueRequest,
     ProjectBriefDoc,
     ProjectBriefRequest,
@@ -152,6 +155,30 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     def put_project_brief(ctx: Ctx, body: ProjectBriefRequest) -> ProjectBriefDoc:
         doc = briefsvc.set_brief(ctx, body.content)
         return ProjectBriefDoc(content=doc.content, updated_at=doc.updated_at)
+
+    # -- Genie chat (Databricks) -------------------------------------
+
+    @app.get("/api/genie/status", response_model=GenieStatus)
+    def genie_status(ctx: Ctx) -> GenieStatus:
+        g = GenieAdapter(ctx.config)
+        return GenieStatus(
+            configured=g.is_configured,
+            space_id=g.space_id or None,
+            reason=g.unavailable_reason(),
+        )
+
+    @app.post("/api/genie/ask", response_model=GenieAnswer)
+    def genie_ask(ctx: Ctx, body: GenieAskRequest) -> GenieAnswer:
+        question = body.question.strip()
+        if not question:
+            raise HTTPException(status_code=422, detail="question is empty")
+        g = GenieAdapter(ctx.config)
+        if not g.is_configured:
+            raise HTTPException(status_code=503, detail=g.unavailable_reason() or "Genie unavailable")
+        try:
+            return g.ask(question, conversation_id=body.conversation_id)
+        except GenieUnavailableError as exc:
+            raise HTTPException(status_code=502, detail=exc.message) from exc
 
     # -- versions ------------------------------------------------------
 

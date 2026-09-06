@@ -181,11 +181,26 @@ class ProjectBriefRequest(BaseModel):
     content: str
 
 
+class GenieAskRequest(BaseModel):
+    """One turn in the dashboard's Genie chat."""
+
+    question: str
+    conversation_id: str | None = None
+
+
+class GenieStatus(BaseModel):
+    configured: bool
+    space_id: str | None = None
+    reason: str | None = None
+
+
 __all__ = [
     "AgentCheckRequest",
     "ComparisonResponse",
     "FeatureDetail",
     "FeatureHistoryPoint",
+    "GenieAskRequest",
+    "GenieStatus",
     "IssueRequest",
     "MetricChange",
     "ProjectBriefDoc",

@@ -101,6 +101,11 @@ class DatabricksSettings(_Section):
     enabled: bool = False
     catalog: str = "devmemory"
     schema_name: str = Field(default="analytics", alias="schema")
+    genie_space_id: str | None = Field(
+        default=None,
+        description="Genie space that backs the dashboard chat. "
+        "Overridden by DATABRICKS_GENIE_SPACE_ID.",
+    )
 
 
 class RegressionSettings(_Section):

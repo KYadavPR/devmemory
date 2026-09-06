@@ -148,6 +148,46 @@ def test_dashboard_index_served(client: TestClient) -> None:
     assert client.get("/static/index.html").status_code == 200
 
 
+def test_genie_status_unconfigured(client: TestClient) -> None:
+    body = client.get("/api/genie/status").json()
+    assert body["configured"] is False
+    assert body["reason"]
+    assert client.post("/api/genie/ask", json={"question": "how many regressions?"}).status_code == 503
+
+
+def test_genie_ask_configured(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    from devmemory.adapters.genie import GenieAnswer
+
+    class FakeGenie:
+        def __init__(self, _config: object) -> None: ...
+
+        space_id = "01efspace"
+        is_configured = True
+
+        def unavailable_reason(self) -> None:
+            return None
+
+        def ask(self, question: str, *, conversation_id: str | None = None) -> GenieAnswer:
+            return GenieAnswer(
+                question=question,
+                conversation_id=conversation_id or "conv-1",
+                message_id="msg-1",
+                text="There were 2 regressions.",
+                sql="SELECT count(*) FROM fact_regressions",
+                columns=["n"],
+                rows=[[2]],
+                row_count=1,
+            )
+
+    monkeypatch.setattr("devmemory.api.app.GenieAdapter", FakeGenie)
+    r = client.post("/api/genie/ask", json={"question": "how many regressions?"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["conversation_id"] == "conv-1"
+    assert body["rows"] == [[2]]
+    assert "regressions" in body["text"]
+
+
 def test_project_brief_roundtrip(client: TestClient) -> None:
     assert client.get("/api/project/brief").json() == {"content": "", "updated_at": None}
 
