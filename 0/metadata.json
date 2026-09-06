@@ -1,0 +1,133 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1V14TBXQY4G47SGYQAMD9XH",
+  "session_id": "fcec3b82-fe78-4cb6-b1dc-40e4f8a72893",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-06T09:35:16.8849376Z",
+  "branch": "docs/project-details",
+  "checkpoints_count": 7,
+  "save_step_count": 4,
+  "files_touched": [
+    "pyproject.toml",
+    "src/devmemory/web/frontend/src/api/client.ts"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "e92040ea6b8a",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 1220,
+    "cache_creation_tokens": 2944029,
+    "cache_read_tokens": 162679576,
+    "output_tokens": 375154,
+    "api_call_count": 611
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01AVhWz5mAnwzPDCfW2D7M6d",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "dataviz"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "1013cc4d85c7",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 469,
+        "end": 470,
+        "entry_ids": [
+          "96114268-5981-46a9-bfe5-b6d5e5c70194"
+        ],
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: dataviz",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 24
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-06T09:35:15.3383321Z",
+    "agent_lines": 0,
+    "agent_removed": 1,
+    "human_added": 641,
+    "human_modified": 295,
+    "human_removed": 0,
+    "total_committed": 838,
+    "total_lines_changed": 1018,
+    "agent_percentage": 0.09823182711198428,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 18,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 18
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 18,
+      "user_lines_removed": 0,
+      "agent_lines_added": 1,
+      "agent_lines_removed": 1,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 18
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 722,
+      "user_lines_removed": 81,
+      "agent_lines_added": 215,
+      "agent_lines_removed": 215,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 18,
+        ".env.example": 4,
+        "src/devmemory/adapters/genie.py": 161,
+        "src/devmemory/api/app.py": 27,
+        "src/devmemory/api/schemas.py": 15,
+        "src/devmemory/config.py": 5,
+        "src/devmemory/web/frontend/src/App.tsx": 2,
+        "src/devmemory/web/frontend/src/api/client.ts": 18,
+        "src/devmemory/web/frontend/src/api/types.ts": 20,
+        "src/devmemory/web/frontend/src/components/Sidebar.tsx": 1,
+        "src/devmemory/web/frontend/src/routes/Ask.tsx": 235,
+        "src/devmemory/web/frontend/src/theme/components.css": 90,
+        "src/devmemory/web/static/assets/index-B9obAJEW.js": 83,
+        "src/devmemory/web/static/assets/index-C81gevra.css": 1,
+        "src/devmemory/web/static/index.html": 2,
+        "tests/test_api.py": 40
+      },
+      "user_removed_per_file": {
+        "src/devmemory/web/static/assets/index-CbV5njRH.js": 78,
+        "src/devmemory/web/static/assets/index-DD-7ceZx.css": 1,
+        "src/devmemory/web/static/index.html": 2
+      }
+    }
+  ]
+}
