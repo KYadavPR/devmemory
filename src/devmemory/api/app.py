@@ -362,7 +362,14 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
 
         @app.get("/", include_in_schema=False)
         def index() -> FileResponse:
-            return FileResponse(_FRONTEND_DIR / "index.html")
+            # Never let a browser hold a stale index.html: it points at
+            # content-hashed asset filenames that change on every rebuild, so a
+            # cached copy boots old JS against the current API. The hashed
+            # /static/assets/* are immutable and cache freely.
+            return FileResponse(
+                _FRONTEND_DIR / "index.html",
+                headers={"Cache-Control": "no-cache, must-revalidate"},
+            )
 
     return app
 
