@@ -5,7 +5,13 @@ All are ``str`` enums so they serialize transparently to JSON and SQLite.
 
 from __future__ import annotations
 
-from enum import StrEnum
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+    class StrEnum(str, Enum):
+        def __str__(self) -> str:
+            return str(self.value)
 
 
 class VersionStatus(StrEnum):
@@ -138,9 +144,35 @@ class TestRunStatus(StrEnum):
     ERROR = "ERROR"
 
 
+class ContextStatus(StrEnum):
+    """Completeness of development context attached to a version or checkpoint."""
+
+    COMPLETE = "COMPLETE"
+    PARTIAL = "PARTIAL"
+    MISSING = "MISSING"
+
+    @property
+    def is_complete(self) -> bool:
+        return self is ContextStatus.COMPLETE
+
+    @property
+    def has_context(self) -> bool:
+        return self is not ContextStatus.MISSING
+
+
+class AnalysisConfidence(StrEnum):
+    """How confident AI/rule-based analysis can be given available context."""
+
+    FULL = "FULL"
+    LIMITED = "LIMITED"
+    CODE_EVIDENCE_ONLY = "CODE_EVIDENCE_ONLY"
+
+
 __all__ = [
+    "AnalysisConfidence",
     "AssociationMethod",
     "ChangeType",
+    "ContextStatus",
     "FeatureStatus",
     "IssueStatus",
     "MetricDirection",

@@ -30,6 +30,7 @@ class VersionBrief(BaseModel):
     version_id: str
     version_number: int
     status: str
+    context_status: str = "COMPLETE"
     is_adverse: bool
     intent: str | None
     feature: str | None
@@ -107,6 +108,11 @@ def version_brief(v: DevelopmentVersion) -> VersionBrief:
         version_id=v.version_id,
         version_number=v.version_number,
         status=v.status.value,
+        context_status=(
+            v.context_status.value
+            if hasattr(v.context_status, "value")
+            else str(v.context_status)
+        ),
         is_adverse=v.status.is_adverse or bool(v.regressions),
         intent=v.intent,
         feature=v.feature_id.split(":", 1)[-1] if v.feature_id else None,

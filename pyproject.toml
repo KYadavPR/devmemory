@@ -7,7 +7,7 @@ name = "devmemory"
 dynamic = ["version"]
 description = "Development-memory and version-intelligence for AI-assisted software development"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "DevMemory contributors" }]

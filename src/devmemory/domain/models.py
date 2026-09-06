@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from devmemory.domain.enums import (
     AssociationMethod,
     ChangeType,
+    ContextStatus,
     FeatureStatus,
     MetricDirection,
     VersionStatus,
@@ -159,6 +160,8 @@ class CheckpointReference(_Model):
     commit_sha: str | None = None
     intent: str | None = None
     """The developer's prompt (from ``<idx>/prompt.txt``), trimmed for storage."""
+    context_status: ContextStatus = ContextStatus.COMPLETE
+    redacted_fields: list[str] = Field(default_factory=list)
     agent: str | None = None
     model: str | None = None
     strategy: str | None = None
@@ -352,6 +355,8 @@ class DevelopmentEvent(_Model):
     run_id: str | None = None
 
     intent: str | None = None
+    context_status: ContextStatus = ContextStatus.COMPLETE
+    redacted_fields: list[str] = Field(default_factory=list)
     agent: str | None = None
     model: str | None = None
     feature: str | None = None
@@ -386,6 +391,8 @@ class DevelopmentVersion(_Model):
     project_id: str
 
     intent: str | None = None
+    context_status: ContextStatus = ContextStatus.COMPLETE
+    redacted_fields: list[str] = Field(default_factory=list)
     agent: str | None = None
     model: str | None = None
 

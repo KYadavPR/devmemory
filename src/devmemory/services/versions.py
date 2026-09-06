@@ -18,6 +18,7 @@ from devmemory.domain.models import (
     Regression,
 )
 from devmemory.logging import get_logger
+from devmemory.privacy.boundary import compute_context_status, is_redacted
 from devmemory.services.context import ProjectContext
 from devmemory.storage.repositories import FeatureRepository
 from devmemory.storage.versions import VersionRepository
@@ -91,11 +92,25 @@ def create_version_from_event(
     feature_id = _resolve_feature(ctx, event)
 
     checkpoint = event.checkpoint
+    raw_intent = event.intent or (checkpoint.intent if checkpoint else None)
+    if is_redacted(raw_intent):
+        actual_intent = None
+    else:
+        actual_intent = raw_intent
+
+    context_status = event.context_status or compute_context_status(
+        has_checkpoint=checkpoint is not None,
+        intent=actual_intent,
+        redacted_fields=event.redacted_fields,
+    )
+
     version = DevelopmentVersion(
         version_id=version_id,
         version_number=number,
         project_id=event.project_id,
-        intent=event.intent or (checkpoint.intent if checkpoint else None) or event.commit.subject,
+        intent=actual_intent,
+        context_status=context_status,
+        redacted_fields=list(event.redacted_fields),
         agent=event.agent or (checkpoint.agent if checkpoint else None),
         model=event.model or (checkpoint.model if checkpoint else None),
         git_commit=event.commit.sha,

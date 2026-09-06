@@ -27,6 +27,15 @@ export function StatusBadge({ status }: { status: string | null | undefined }) {
   );
 }
 
+export function ContextStatusBadge({ status }: { status: string | null | undefined }) {
+  const s = (status || "COMPLETE").toUpperCase();
+  const tone: Tone = s === "COMPLETE" ? "success" : s === "PARTIAL" ? "warn" : "neutral";
+  const label = s === "COMPLETE" ? "Context Complete" : s === "PARTIAL" ? "Context Partial" : "Context Missing";
+  return (
+    <Badge tone={tone}>{label}</Badge>
+  );
+}
+
 /* ---- Card -------------------------------------------------------------- */
 
 export function Card({

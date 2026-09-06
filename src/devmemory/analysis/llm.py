@@ -32,6 +32,9 @@ _SYSTEM = (
     "attempts, change-impact). Treat every number as exact and correct - never "
     "hedge it, never restate it as approximate, never contradict it. Your job is "
     "interpretation only.\n\n"
+    "If context_status is 'PARTIAL' or 'MISSING', developer prompt context was unavailable "
+    "or redacted: do NOT guess or invent developer intent. Rely strictly on observable facts "
+    "(files changed, tests, metrics), noting in the summary or reasoning that prompt context was unavailable.\n\n"
     "Reply with ONLY a JSON object, no prose around it:\n"
     '{"summary": str (<= 3 sentences), "reasoning": str|null, '
     '"recommendation": str|null, "warnings": [str], '
@@ -86,6 +89,8 @@ class LLMProvider(AnalysisProvider):
 def _prompt(d: AnalysisInput) -> str:
     facts: dict[str, Any] = {
         "intent": d.intent,
+        "context_status": d.context_status,
+        "analysis_confidence": d.analysis_confidence,
         "feature": d.feature,
         "agent": d.agent,
         "status": d.status,

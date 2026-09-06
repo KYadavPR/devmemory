@@ -34,12 +34,22 @@ def development_trace(ctx: ProjectContext, ref: str) -> DevelopmentTrace:
 def build_trace(v: DevelopmentVersion) -> DevelopmentTrace:
     nodes: list[TraceNode] = []
 
+    status_str = (
+        v.context_status.value
+        if hasattr(v.context_status, "value")
+        else str(v.context_status)
+    )
+    intent_val = v.intent or (
+        "[REDACTED / UNAVAILABLE]" if status_str == "PARTIAL" else "(none recorded)"
+    )
     nodes.append(
         TraceNode(
             key="intent",
             label="Intent",
-            value=v.intent or "(none recorded)",
+            value=intent_val,
+            detail=f"Context: {status_str}",
             source="intent",
+            status="redacted" if (v.intent is None and "intent" in v.redacted_fields) else ("available" if v.intent else "missing"),
         )
     )
 

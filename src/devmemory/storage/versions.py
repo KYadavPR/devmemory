@@ -11,7 +11,13 @@ import json
 import sqlite3
 from datetime import UTC, datetime
 
-from devmemory.domain.enums import AssociationMethod, ChangeType, MetricDirection, VersionStatus
+from devmemory.domain.enums import (
+    AssociationMethod,
+    ChangeType,
+    ContextStatus,
+    MetricDirection,
+    VersionStatus,
+)
 from devmemory.domain.models import (
     Analysis,
     Artifact,
@@ -248,21 +254,28 @@ class VersionRepository:
         v: DevelopmentVersion,
         event: DevelopmentEvent | None,
     ) -> None:
+        context_status_str = (
+            v.context_status.value
+            if hasattr(v.context_status, "value")
+            else str(v.context_status)
+        )
         conn.execute(
             """
             INSERT INTO versions (
-                version_number, version_id, project_id, intent, agent, model,
-                git_commit, parent_commit, branch, feature_id, status,
+                version_number, version_id, project_id, intent, context_status, redacted_fields_json,
+                agent, model, git_commit, parent_commit, branch, feature_id, status,
                 files_changed, lines_added, lines_removed,
                 entire_association_method, entire_association_confidence,
                 environment_json, source_event_json, run_id, created_at, committed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 v.version_number,
                 v.version_id,
                 v.project_id,
                 v.intent,
+                context_status_str,
+                json.dumps(v.redacted_fields),
                 v.agent,
                 v.model,
                 v.git_commit,
@@ -503,11 +516,21 @@ class VersionRepository:
         env_raw = row["environment_json"]
         environment = EnvironmentInfo.model_validate_json(env_raw) if env_raw else None
 
+        row_keys = row.keys()
+        context_status_val = row["context_status"] if "context_status" in row_keys else "COMPLETE"
+        redacted_raw = row["redacted_fields_json"] if "redacted_fields_json" in row_keys else "[]"
+        try:
+            redacted_fields = json.loads(redacted_raw) if redacted_raw else []
+        except Exception:
+            redacted_fields = []
+
         return DevelopmentVersion(
             version_id=vid,
             version_number=row["version_number"],
             project_id=row["project_id"],
             intent=row["intent"],
+            context_status=ContextStatus(context_status_val) if context_status_val else ContextStatus.COMPLETE,
+            redacted_fields=redacted_fields,
             agent=row["agent"],
             model=row["model"],
             git_commit=row["git_commit"],

@@ -29,6 +29,7 @@ from devmemory.cli.impact import impact_command
 from devmemory.cli.init import init_command
 from devmemory.cli.mcp import mcp_command
 from devmemory.cli.memory import memory_command
+from devmemory.cli.privacy import privacy_audit_command
 from devmemory.cli.restore import restore_command
 from devmemory.cli.search import search_command
 from devmemory.cli.serve import serve_command
@@ -142,6 +143,7 @@ app.add_typer(databricks_app, name="databricks")
 app.command(name="serve")(handle_errors(serve_command))
 app.command(name="mcp")(handle_errors(mcp_command))
 app.add_typer(task_app, name="task")
+app.command(name="privacy-audit")(handle_errors(privacy_audit_command))
 app.command(name="state")(handle_errors(state_command))
 
 

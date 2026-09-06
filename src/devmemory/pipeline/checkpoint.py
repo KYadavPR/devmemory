@@ -32,6 +32,7 @@ from devmemory.pipeline.feature_detect import detect_feature
 from devmemory.pipeline.regression import RegressionThresholds, detect_regressions
 from devmemory.pipeline.runlog import RunLog, StageRecord
 from devmemory.pipeline.status_rules import derive_status
+from devmemory.privacy.boundary import compute_context_status, is_redacted
 from devmemory.services.analysis import analyze_version
 from devmemory.services.context import ProjectContext
 from devmemory.services.databricks_sync import push_version
@@ -213,11 +214,38 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
             st.data["status"] = status.value
 
         with run.stage("build_event"):
+            has_checkpoint = checkpoint is not None
+            raw_intent = intent
+            redacted_list = list(checkpoint.redacted_fields) if checkpoint else []
+            if is_redacted(raw_intent):
+                actual_intent = None
+                if "intent" not in redacted_list:
+                    redacted_list.append("intent")
+            elif raw_intent is None:
+                actual_intent = None
+                if "intent" not in redacted_list:
+                    redacted_list.append("intent")
+            else:
+                actual_intent = raw_intent
+
+            if not has_checkpoint:
+                if "checkpoint" not in redacted_list:
+                    redacted_list.append("checkpoint")
+
+            computed_redacted = sorted(set(redacted_list))
+            computed_status = compute_context_status(
+                has_checkpoint=has_checkpoint,
+                intent=actual_intent,
+                redacted_fields=computed_redacted,
+            )
+
             event = DevelopmentEvent(
                 project_id=ctx.config.project_id,
                 occurred_at=datetime.now(UTC),
                 run_id=run.run_id,
-                intent=intent,
+                intent=actual_intent,
+                context_status=computed_status,
+                redacted_fields=computed_redacted,
                 agent=request.agent or (checkpoint.agent if checkpoint else None),
                 model=checkpoint.model if checkpoint else None,
                 feature=feature[0] if feature else None,

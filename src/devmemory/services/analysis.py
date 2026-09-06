@@ -12,6 +12,7 @@ from __future__ import annotations
 from devmemory.analysis import AnalysisInput, build_providers, run_analysis
 from devmemory.analysis.base import AttemptRef, ImpactRef, MetricDelta
 from devmemory.domain.models import Analysis, DevelopmentVersion
+from devmemory.privacy.boundary import determine_analysis_confidence
 from devmemory.services.context import ProjectContext
 from devmemory.services.memory import MemoryQuery, previous_attempts
 from devmemory.services.versions import get_version
@@ -62,6 +63,13 @@ def build_analysis_input(ctx: ProjectContext, version: DevelopmentVersion) -> An
     return AnalysisInput(
         version_id=version.version_id,
         intent=version.intent,
+        context_status=(
+            version.context_status.value
+            if hasattr(version.context_status, "value")
+            else str(version.context_status)
+        ),
+        analysis_confidence=determine_analysis_confidence(version.context_status).value,
+        redacted_fields=list(version.redacted_fields),
         feature=feature,
         agent=version.agent,
         model=version.model,

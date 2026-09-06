@@ -34,6 +34,8 @@ class VersionListItem(BaseModel):
     version_id: str
     version_number: int
     status: str
+    context_status: str = "COMPLETE"
+    redacted_fields: list[str] = []
     intent: str | None
     agent: str | None
     model: str | None
@@ -103,6 +105,7 @@ class SearchHit(BaseModel):
     version_id: str
     version_number: int
     status: str
+    context_status: str = "COMPLETE"
     intent: str | None
     agent: str | None
     feature: str | None

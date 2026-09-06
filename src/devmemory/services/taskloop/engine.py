@@ -218,14 +218,25 @@ def refresh_state(ctx: ProjectContext, task_id: str) -> NormalizedState:
 def get_checkpoint(ctx: ProjectContext, checkpoint_id: str) -> dict[str, object]:
     """Compact, useful metadata for one checkpoint via Entire (§11 ``get_checkpoint``).
 
-    Never a full transcript by default.
+    Never a full transcript by default. Falls back to local database when Entire is absent.
     """
     ref = ctx.entire.get_checkpoint(checkpoint_id)
+    if ref is None:
+        from devmemory.storage.repositories import CheckpointRepository
+
+        ref = CheckpointRepository(ctx.db).get(checkpoint_id)
+
     if ref is None:
         return {"checkpoint_id": checkpoint_id, "available": False, "reason": "not found in Entire"}
     return {
         "checkpoint_id": ref.checkpoint_id,
         "available": True,
+        "context_status": (
+            ref.context_status.value
+            if hasattr(ref.context_status, "value")
+            else str(ref.context_status)
+        ),
+        "redacted_fields": list(ref.redacted_fields),
         "intent": ref.intent,
         "agent": ref.agent,
         "model": ref.model,

@@ -110,13 +110,13 @@ def test_version_record_carries_no_source_transcript_or_secret() -> None:
     v = _sample_version()
     blob = json.dumps(version_record(v))
 
-    # the changed-file *path* is telemetry, but never file contents / diffs / transcripts
-    for banned in ("diff", "transcript", "patch", "content", "prompt.txt"):
+    # the changed-file *path* is telemetry, but never file contents / diffs / transcripts / prompts
+    for banned in ("diff", "transcript", "patch", "content", "prompt.txt", "intent"):
         assert banned not in blob
-    # the intent is truncated and still travels, but nothing longer than the cap
-    assert len(version_record(v)["intent"]) <= 2000
-    # a secret pasted into the intent is not something we can scrub here, but the
-    # normalized record must not invent secret-bearing fields
+    # Under Track 1 Privacy Boundary: raw intent/prompts must NEVER travel to Databricks
+    assert "intent" not in set(_VERSION_FIELDS)
+    assert "intent" not in version_record(v)
+    assert version_record(v)["context_status"] == "COMPLETE"
     assert "token" not in set(_VERSION_FIELDS)
     assert "api_key" not in set(_VERSION_FIELDS)
 

@@ -31,6 +31,7 @@ from devmemory.domain.models import (
     TokenUsage,
 )
 from devmemory.logging import get_logger
+from devmemory.privacy.boundary import compute_context_status, is_redacted
 
 if TYPE_CHECKING:
     from devmemory.adapters.git import GitAdapter
@@ -228,6 +229,20 @@ class EntireAdapter:
             return None
         if commit_sha and not ref.commit_sha:
             ref.commit_sha = commit_sha
+
+        # Privacy boundary: check for redacted/missing fields and set context status
+        redacted = list(ref.redacted_fields)
+        if ref.intent is None or is_redacted(ref.intent):
+            ref.intent = None
+            if "intent" not in redacted:
+                redacted.append("intent")
+
+        ref.redacted_fields = sorted(set(redacted))
+        ref.context_status = compute_context_status(
+            has_checkpoint=True,
+            intent=ref.intent,
+            redacted_fields=ref.redacted_fields,
+        )
         return ref
 
     def _explain_json(
@@ -305,7 +320,10 @@ class EntireAdapter:
         text = self._git.cat_ref_blob(git_ref, path)
         if not text:
             return None
-        return text.strip()[:_INTENT_MAX_CHARS] or None
+        trimmed = text.strip()[:_INTENT_MAX_CHARS] or None
+        if trimmed is not None and is_redacted(trimmed):
+            return None
+        return trimmed
 
     def _find_ref(self, checkpoint_id: str) -> str | None:
         if self._git is None:

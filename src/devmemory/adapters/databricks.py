@@ -19,6 +19,7 @@ from devmemory.config import DevMemoryConfig, resolve_databricks_credentials
 from devmemory.domain.errors import DatabricksError
 from devmemory.domain.models import DevelopmentVersion
 from devmemory.logging import get_logger
+from devmemory.privacy.boundary import sanitize_for_export
 
 if TYPE_CHECKING:
     from databricks.sdk import WorkspaceClient
@@ -30,7 +31,7 @@ _VERSION_FIELDS = (
     "project_id",
     "version_id",
     "version_number",
-    "intent",
+    "context_status",
     "agent",
     "model",
     "checkpoint_id",
@@ -254,7 +255,11 @@ def version_record(version: DevelopmentVersion) -> dict[str, Any]:
         "project_id": version.project_id,
         "version_id": version.version_id,
         "version_number": version.version_number,
-        "intent": (version.intent or "")[:2000] or None,
+        "context_status": (
+            version.context_status.value
+            if hasattr(version.context_status, "value")
+            else str(version.context_status)
+        ),
         "agent": version.agent,
         "model": version.model,
         "checkpoint_id": cp.checkpoint_id if cp else None,
@@ -276,7 +281,7 @@ def version_record(version: DevelopmentVersion) -> dict[str, Any]:
         "committed_at": version.committed_at.isoformat() if version.committed_at else None,
         "recorded_at": version.created_at.isoformat(),
     }
-    return {k: record.get(k) for k in _VERSION_FIELDS}
+    return sanitize_for_export({k: record.get(k) for k in _VERSION_FIELDS})
 
 
 def outbox_event(version: DevelopmentVersion) -> dict[str, Any]:
@@ -317,7 +322,7 @@ def _as_param(value: object) -> str | None:
 
 _SCHEMA_DDL = (
     """CREATE TABLE IF NOT EXISTS {t}.fact_versions (
-        project_id STRING, version_id STRING, version_number INT, intent STRING,
+        project_id STRING, version_id STRING, version_number INT, context_status STRING,
         agent STRING, model STRING, checkpoint_id STRING, association_method STRING,
         association_confidence DOUBLE, git_commit STRING, parent_commit STRING, branch STRING,
         feature STRING, status STRING, files_changed INT, lines_added INT, lines_removed INT,

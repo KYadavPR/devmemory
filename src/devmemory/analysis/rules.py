@@ -29,7 +29,15 @@ class RulesProvider(AnalysisProvider):
 
 
 def _summary(d: AnalysisInput) -> str:
-    what = d.intent or f"a {d.files_changed}-file change"
+    if d.intent:
+        what = d.intent
+    elif d.context_status == "PARTIAL":
+        what = f"a {d.files_changed}-file change (prompt context unavailable/redacted)"
+    elif d.context_status == "MISSING":
+        what = f"a {d.files_changed}-file change (no checkpoint context)"
+    else:
+        what = f"a {d.files_changed}-file change"
+
     scope = f"{d.files_changed} file(s), +{d.lines_added}/-{d.lines_removed}"
     if d.status == "REGRESSION" or d.regressions:
         return f"{what} - regressed ({'; '.join(d.regressions) or 'status set to REGRESSION'}). {scope}."
@@ -44,6 +52,8 @@ def _summary(d: AnalysisInput) -> str:
 
 def _reasoning(d: AnalysisInput) -> str | None:
     bits: list[str] = []
+    if d.context_status in ("PARTIAL", "MISSING"):
+        bits.append(f"Prompt context is {d.context_status.lower()}; reasoning from code evidence only")
     for m in d.metric_deltas:
         if m.before is not None and m.after is not None and m.before != m.after:
             move = "improved" if m.improved else "worsened" if m.worsened else "changed"
@@ -81,6 +91,11 @@ def _recommendation(d: AnalysisInput) -> str | None:
 
 def _warnings(d: AnalysisInput) -> list[str]:
     out: list[str] = []
+    if d.context_status in ("PARTIAL", "MISSING"):
+        out.append(
+            f"Context completeness is {d.context_status}: developer prompt context was unavailable or redacted. "
+            "Analysis is based strictly on observable code changes, tests, and metrics."
+        )
     for a in d.previous_attempts:
         if a.status in ("REGRESSION", "ERROR"):
             out.append(f"{a.version_id.upper()} [{a.status}]: {a.result}")

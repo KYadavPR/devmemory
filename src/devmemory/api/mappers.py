@@ -51,6 +51,12 @@ def version_list_item(v: DevelopmentVersion) -> VersionListItem:
         version_id=v.version_id,
         version_number=v.version_number,
         status=v.status.value,
+        context_status=(
+            v.context_status.value
+            if hasattr(v.context_status, "value")
+            else str(v.context_status)
+        ),
+        redacted_fields=list(v.redacted_fields),
         intent=v.intent,
         agent=v.agent,
         model=v.model,
@@ -77,6 +83,11 @@ def search_hit(v: DevelopmentVersion) -> SearchHit:
         version_id=v.version_id,
         version_number=v.version_number,
         status=v.status.value,
+        context_status=(
+            v.context_status.value
+            if hasattr(v.context_status, "value")
+            else str(v.context_status)
+        ),
         intent=v.intent,
         agent=v.agent,
         feature=v.feature_id.split(":", 1)[-1] if v.feature_id else None,

@@ -11,7 +11,7 @@ import json
 import sqlite3
 from datetime import UTC, datetime
 
-from devmemory.domain.enums import AssociationMethod, FeatureStatus
+from devmemory.domain.enums import AssociationMethod, ContextStatus, FeatureStatus
 from devmemory.domain.models import (
     CheckpointReference,
     CheckpointSession,
@@ -112,19 +112,26 @@ class CheckpointRepository:
         self._db = db
 
     def upsert(self, project_id: str, ref: CheckpointReference) -> None:
+        context_status_str = (
+            ref.context_status.value
+            if hasattr(ref.context_status, "value")
+            else str(ref.context_status)
+        )
         with self._db.transaction() as conn:
             conn.execute(
                 """
                 INSERT INTO entire_checkpoints (
-                    checkpoint_id, project_id, ref, agent, model, intent, strategy,
-                    created_at, git_commit, association_method, association_confidence,
-                    tokens_json, imported, sessions_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    checkpoint_id, project_id, ref, agent, model, intent, context_status,
+                    redacted_fields_json, strategy, created_at, git_commit, association_method,
+                    association_confidence, tokens_json, imported, sessions_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(checkpoint_id) DO UPDATE SET
                     ref = COALESCE(excluded.ref, entire_checkpoints.ref),
                     agent = COALESCE(excluded.agent, entire_checkpoints.agent),
                     model = COALESCE(excluded.model, entire_checkpoints.model),
                     intent = COALESCE(excluded.intent, entire_checkpoints.intent),
+                    context_status = COALESCE(excluded.context_status, entire_checkpoints.context_status),
+                    redacted_fields_json = COALESCE(excluded.redacted_fields_json, entire_checkpoints.redacted_fields_json),
                     strategy = COALESCE(excluded.strategy, entire_checkpoints.strategy),
                     created_at = COALESCE(excluded.created_at, entire_checkpoints.created_at),
                     git_commit = COALESCE(excluded.git_commit, entire_checkpoints.git_commit),
@@ -141,6 +148,8 @@ class CheckpointRepository:
                     ref.agent,
                     ref.model,
                     ref.intent,
+                    context_status_str,
+                    json.dumps(ref.redacted_fields),
                     ref.strategy,
                     ref.created_at.isoformat() if ref.created_at else None,
                     ref.commit_sha,
@@ -183,10 +192,19 @@ def _checkpoint_from_row(row: sqlite3.Row) -> CheckpointReference:
     tokens_raw = _load_json(row["tokens_json"])
     sessions_raw = _load_json(row["sessions_json"])
     method_value = row["association_method"] or AssociationMethod.NONE.value
+    row_keys = row.keys()
+    context_status_val = row["context_status"] if "context_status" in row_keys else "COMPLETE"
+    redacted_raw = row["redacted_fields_json"] if "redacted_fields_json" in row_keys else "[]"
+    try:
+        redacted_fields = json.loads(redacted_raw) if redacted_raw else []
+    except Exception:
+        redacted_fields = []
     return CheckpointReference(
         checkpoint_id=row["checkpoint_id"],
         commit_sha=row["git_commit"],
         intent=row["intent"],
+        context_status=ContextStatus(context_status_val) if context_status_val else ContextStatus.COMPLETE,
+        redacted_fields=redacted_fields,
         agent=row["agent"],
         model=row["model"],
         strategy=row["strategy"],

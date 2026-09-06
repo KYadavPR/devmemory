@@ -2,6 +2,8 @@
 // src/devmemory/api/schemas.py and domain/models.py). Regenerate the raw
 // OpenAPI types with `npm run gen:api` if you need to cross-check.
 
+export type ContextStatus = "COMPLETE" | "PARTIAL" | "MISSING";
+
 export type VersionStatus =
   | "SUCCESS"
   | "PARTIAL_SUCCESS"
@@ -44,6 +46,8 @@ export interface VersionListItem {
   version_id: string;
   version_number: number;
   status: VersionStatus;
+  context_status?: ContextStatus;
+  redacted_fields?: string[];
   intent: string | null;
   agent: string | null;
   model: string | null;
@@ -117,6 +121,8 @@ export interface CheckpointReference {
   checkpoint_id: string;
   commit_sha: string | null;
   intent: string | null;
+  context_status?: ContextStatus;
+  redacted_fields?: string[];
   agent: string | null;
   model: string | null;
   strategy: string | null;
@@ -146,6 +152,8 @@ export interface DevelopmentVersion {
   version_number: number;
   project_id: string;
   intent: string | null;
+  context_status?: ContextStatus;
+  redacted_fields?: string[];
   agent: string | null;
   model: string | null;
   git_commit: string;

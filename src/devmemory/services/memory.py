@@ -25,6 +25,7 @@ class PreviousAttempt(BaseModel):
     version_id: str
     version_number: int
     status: str
+    context_status: str = "COMPLETE"
     intent: str | None
     agent: str | None
     feature: str | None
@@ -112,6 +113,11 @@ def _score(
         version_id=v.version_id,
         version_number=v.version_number,
         status=v.status.value,
+        context_status=(
+            v.context_status.value
+            if hasattr(v.context_status, "value")
+            else str(v.context_status)
+        ),
         intent=v.intent,
         agent=v.agent,
         feature=v.feature_id.split(":", 1)[-1] if v.feature_id else None,
@@ -129,7 +135,7 @@ def _score(
 def _change_summary(v: DevelopmentVersion) -> str:
     files = ", ".join(f.path for f in v.changed_files[:3])
     more = f" (+{len(v.changed_files) - 3} more)" if len(v.changed_files) > 3 else ""
-    return f"{files}{more}  +{v.lines_added}/-{v.lines_removed}" if files else v.intent or "—"
+    return f"{files}{more}  +{v.lines_added}/-{v.lines_removed}" if files else (v.intent or "—")
 
 
 def _result_summary(v: DevelopmentVersion) -> str:

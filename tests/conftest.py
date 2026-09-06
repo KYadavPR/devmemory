@@ -2,6 +2,19 @@
 
 from __future__ import annotations
 
+import sys
+
+if sys.version_info < (3, 11):
+    import datetime
+    import enum
+    if not hasattr(datetime, "UTC"):
+        datetime.UTC = datetime.timezone.utc
+    if not hasattr(enum, "StrEnum"):
+        class _StrEnum(str, enum.Enum):
+            def __str__(self) -> str:
+                return str(self.value)
+        enum.StrEnum = _StrEnum
+
 import json
 import subprocess
 from collections.abc import Iterator

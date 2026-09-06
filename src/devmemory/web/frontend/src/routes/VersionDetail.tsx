@@ -8,7 +8,7 @@ import {
   useVersionImpact,
 } from "@/api/client";
 import { Async } from "@/components/Async";
-import { Card, PageHead, StatusBadge, Badge, Sha, Skeleton } from "@/components/primitives";
+import { Card, PageHead, StatusBadge, ContextStatusBadge, Badge, Sha, Skeleton } from "@/components/primitives";
 import { DiffView } from "@/components/DiffView";
 import { AttemptCard } from "@/components/AttemptCard";
 import { Icon } from "@/components/Icon";
@@ -64,9 +64,15 @@ export function VersionDetail() {
                 <span className="row" style={{ gap: 10 }}>
                   {vlabel(v.version_id)}
                   <StatusBadge status={v.status} />
+                  <ContextStatusBadge status={v.context_status} />
                 </span>
               }
-              subtitle={v.intent ?? "No recorded intent"}
+              subtitle={
+                v.intent ??
+                (v.context_status === "PARTIAL"
+                  ? "Prompt context unavailable / redacted"
+                  : "No recorded intent")
+              }
               actions={
                 <Link className="btn btn--sm" to={`/compare/${v.version_id}...${v.version_id}`}>
                   <Icon name="compare" size={14} /> Compare

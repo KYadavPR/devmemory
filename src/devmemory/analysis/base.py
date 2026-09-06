@@ -49,6 +49,9 @@ class AnalysisInput(BaseModel):
 
     version_id: str
     intent: str | None
+    context_status: str = "COMPLETE"
+    analysis_confidence: str = "FULL"
+    redacted_fields: list[str] = Field(default_factory=list)
     feature: str | None
     agent: str | None
     model: str | None
