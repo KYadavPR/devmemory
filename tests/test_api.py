@@ -140,6 +140,8 @@ def test_missing_version_is_404(client: TestClient) -> None:
 def test_dashboard_index_served(client: TestClient) -> None:
     r = client.get("/")
     assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/html")
     assert "DevMemory" in r.text
-    assert client.get("/static/app.js").status_code == 200
-    assert client.get("/static/style.css").status_code == 200
+    # the built Vite bundle: index.html links a hashed JS + CSS asset under /static/
+    assert '/static/assets/' in r.text
+    assert client.get("/static/index.html").status_code == 200

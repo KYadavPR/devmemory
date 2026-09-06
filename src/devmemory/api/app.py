@@ -63,7 +63,10 @@ from devmemory.services.versions import (
     version_diff,
 )
 
-_FRONTEND_DIR = Path(__file__).parent / "static"
+# The dashboard is a Vite/React app. Its source lives in src/devmemory/web/frontend/
+# and the built bundle is committed to src/devmemory/web/static/ (the wheel ships
+# it, so `devmemory serve` needs no Node). Run `npm run build` there to refresh it.
+_FRONTEND_DIR = Path(__file__).parents[1] / "web" / "static"
 _PROBE_TTL = 20.0
 
 

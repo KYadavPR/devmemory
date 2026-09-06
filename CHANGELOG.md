@@ -6,6 +6,22 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed — Dashboard redesign (Vite + React)
+
+- The dashboard is now a Vite + React + TypeScript app (`src/devmemory/web/frontend/`),
+  built to `src/devmemory/web/static/` — committed, so `devmemory serve` still
+  needs no Node. The old vanilla `src/devmemory/api/static/` bundle is removed.
+- New information architecture: **Overview** reads as a narrative (health
+  headline, a repeated-failure callout, a version-health strip), a redesigned
+  **Version** page with sticky in-page nav and a file-tree diff viewer, a new
+  **Safe to change?** page wrapping `POST /api/agent/check` for humans,
+  **Timeline** with status/feature filters, and a report-grade **Intelligence**
+  page with hand-rolled SVG charts (no chart library).
+- New visual system: design tokens with system/light/dark themes (`?theme=`
+  override), a ⌘K command palette, skeleton loading, error boundaries, real
+  empty states, and a mobile nav.
+- `test_dashboard_index_served` updated for the built bundle.
+
 ### Added — Phase 14: demo, doctor, docs, end-to-end test
 
 - `devmemory doctor` — checks the toolchain (Python, git, `entire`, the `graph`
