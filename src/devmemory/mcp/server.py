@@ -125,12 +125,22 @@ def build_server(repo_path: Path | str | None = None) -> FastMCP:
         files: list[str] | None = None,
         intent: str = "",
         feature: str | None = None,
+        symbols: list[str] | None = None,
     ) -> ChangeGuidance:
         """Pre-flight check: given the files you are about to edit (and optionally
-        your intent / the feature), returns a verdict - proceed | caution |
-        high-risk - with the specific prior failures to read first. Call this
+        your intent / the feature / the specific functions or types you will
+        change), returns a verdict - proceed | caution | high-risk - with the
+        prior failures to read first AND the live code-graph blast radius for each
+        named symbol (direct + transitive callers, type consumers, co-changing
+        files). Pass ``symbols`` as names or ``path/to/file.py:line``. Call this
         before editing."""
-        return change_guidance(ctx(), files=files or [], intent=intent or None, feature=feature)
+        return change_guidance(
+            ctx(),
+            files=files or [],
+            intent=intent or None,
+            feature=feature,
+            symbols=symbols or [],
+        )
 
     @mcp.tool
     def search_versions(query: str, limit: int = 10) -> list[VersionBrief]:

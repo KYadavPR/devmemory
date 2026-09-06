@@ -5,22 +5,22 @@ import { Card, PageHead, Badge, EmptyState } from "@/components/primitives";
 import { AttemptCard } from "@/components/AttemptCard";
 import { Icon } from "@/components/Icon";
 import { verdictTone } from "@/lib/status";
-import type { ChangeGuidance } from "@/api/types";
+import type { ChangeGuidance, SymbolImpact } from "@/api/types";
+
+const splitList = (s: string) =>
+  s
+    .split(/[\n,]+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
 
 export function SafeToChange() {
   const analytics = useAnalytics();
   const [files, setFiles] = useState("");
   const [intent, setIntent] = useState("");
+  const [symbols, setSymbols] = useState("");
 
   const mutation = useMutation<ChangeGuidance, Error, void>({
-    mutationFn: () =>
-      checkChange(
-        files
-          .split(/[\n,]+/)
-          .map((s) => s.trim())
-          .filter(Boolean),
-        intent,
-      ),
+    mutationFn: () => checkChange(splitList(files), intent, splitList(symbols)),
   });
 
   const churn = analytics.data?.file_churn ?? [];
@@ -71,6 +71,17 @@ export function SafeToChange() {
             onChange={(e) => setIntent(e.target.value)}
           />
 
+          <label className="field-label" style={{ marginTop: 14 }}>
+            Symbols <span className="muted">(optional — names or file.py:line, for graph blast radius)</span>
+          </label>
+          <input
+            className="input"
+            placeholder="apply_discount, pricing/core.py:8"
+            value={symbols}
+            onChange={(e) => setSymbols(e.target.value)}
+            style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem" }}
+          />
+
           <button
             className="btn btn--primary"
             style={{ marginTop: 14, width: "100%" }}
@@ -116,6 +127,20 @@ function Guidance({ g }: { g: ChangeGuidance }) {
         </div>
       </Card>
 
+      {g.symbol_impacts.length > 0 && (
+        <Card
+          title="Code-graph blast radius"
+          action={<span className="muted text-xs">entire graph · max {g.max_blast_radius} dependents</span>}
+          pad
+        >
+          <div className="stack" style={{ gap: 12 }}>
+            {g.symbol_impacts.map((si) => (
+              <BlastRadius key={si.query} si={si} />
+            ))}
+          </div>
+        </Card>
+      )}
+
       {g.warnings.length > 0 && (
         <Card title="Warnings" pad>
           <ul className="warn-list">
@@ -148,6 +173,56 @@ function Guidance({ g }: { g: ChangeGuidance }) {
             ))}
           </div>
         </Card>
+      )}
+    </div>
+  );
+}
+
+function BlastRadius({ si }: { si: SymbolImpact }) {
+  if (!si.resolved) {
+    return (
+      <div className="text-sm">
+        <span className="mono">{si.query}</span>{" "}
+        <span className="muted">
+          {si.definitions.length
+            ? `— ambiguous (${si.definitions.length} definitions); pass file:line`
+            : "— not found in the graph"}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+        <span className="mono" style={{ fontWeight: 600 }}>
+          {si.query}
+        </span>
+        <Badge tone={si.blast_radius >= 20 ? "bad" : si.blast_radius >= 8 ? "warn" : "neutral"}>
+          {si.blast_radius} dependents
+        </Badge>
+        <span className="muted text-xs">
+          {si.callers_total} callers · {si.callees_total} callees
+          {si.type_consumers_total ? ` · ${si.type_consumers_total} type consumers` : ""}
+        </span>
+      </div>
+      {si.callers.length > 0 && (
+        <ul className="rec-list" style={{ marginTop: 6 }}>
+          {si.callers.slice(0, 8).map((c, i) => (
+            <li key={i}>
+              <span className="mono">{c.name}</span>{" "}
+              <span className="muted text-xs">
+                {c.file_path}
+                {c.start_line ? `:${c.start_line}` : ""}
+                {c.depth > 1 ? ` · via ${c.via}` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {si.cochange_files.length > 0 && (
+        <div className="muted text-xs" style={{ marginTop: 4 }}>
+          historically co-changes with: {si.cochange_files.slice(0, 4).join(", ")}
+        </div>
       )}
     </div>
   );

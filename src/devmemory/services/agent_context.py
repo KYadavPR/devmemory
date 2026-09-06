@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from devmemory.adapters.graph import SymbolImpact
 from devmemory.domain.enums import VersionStatus
 from devmemory.domain.models import DevelopmentVersion
 from devmemory.services.context import ProjectContext
@@ -82,6 +83,11 @@ class ChangeGuidance(BaseModel):
     related_attempts: list[PreviousAttempt]
     warnings: list[str]
     recommendations: list[str]
+    # live code-graph blast radius (empty when the graph plugin is unavailable
+    # or no symbols were named)
+    graph_available: bool = False
+    symbol_impacts: list[SymbolImpact] = []
+    max_blast_radius: int = 0
 
 
 # --- builders ------------------------------------------------------------------
@@ -196,14 +202,67 @@ def version_report(ctx: ProjectContext, ref: str) -> VersionReport:
     )
 
 
+_RANK = {PROCEED: 0, CAUTION: 1, HIGH_RISK: 2}
+_BLAST_CAUTION = 8
+_BLAST_HIGH_RISK = 20
+
+
+def _worse(a: str, b: str) -> str:
+    return a if _RANK[a] >= _RANK[b] else b
+
+
+def _graph_blast_radius(
+    ctx: ProjectContext, symbols: list[str]
+) -> tuple[list[SymbolImpact], list[str], list[str], str]:
+    """Run `entire graph impact` for each named symbol. Returns
+    (impacts, warnings, recommendations, verdict_floor)."""
+    warnings: list[str] = []
+    recommendations: list[str] = []
+    impacts: list[SymbolImpact] = []
+    floor = PROCEED
+    if not symbols or not ctx.graph.is_available:
+        return impacts, warnings, recommendations, floor
+
+    for sym in symbols:
+        si = ctx.graph.symbol_impact(sym)
+        if si is None:
+            continue
+        impacts.append(si)
+        if not si.resolved:
+            if si.definitions:
+                where = ", ".join(f"{d.file_path}:{d.start_line}" for d in si.definitions[:4])
+                recommendations.append(f"`{sym}` is ambiguous in the graph - candidates: {where}")
+            continue
+        if si.callers_total == 0 and si.type_consumers_total == 0:
+            continue
+        files_hit = [f for f in si.affected_files if f]
+        warnings.append(
+            f"`{si.query}` has {si.callers_total} caller(s)"
+            + (f" + {si.type_consumers_total} type consumer(s)" if si.type_consumers_total else "")
+            + (f" across {len(files_hit)} file(s): {', '.join(files_hit[:6])}" if files_hit else "")
+        )
+        if si.blast_radius >= _BLAST_HIGH_RISK:
+            floor = _worse(floor, HIGH_RISK)
+            recommendations.append(
+                f"`{si.query}` is high fan-out ({si.blast_radius}) - keep its signature/behaviour "
+                "stable, or run the full suite and check every caller."
+            )
+        elif si.blast_radius >= _BLAST_CAUTION:
+            floor = _worse(floor, CAUTION)
+            recommendations.append(f"Run tests covering the {si.blast_radius} dependents of `{si.query}`.")
+    return impacts, warnings, recommendations, floor
+
+
 def change_guidance(
     ctx: ProjectContext,
     *,
     files: list[str] | None = None,
     intent: str | None = None,
     feature: str | None = None,
+    symbols: list[str] | None = None,
 ) -> ChangeGuidance:
     files = [f for f in (files or []) if f.strip()]
+    symbols = [s.strip() for s in (symbols or []) if s.strip()]
     attempts = previous_attempts(
         ctx,
         MemoryQuery(
@@ -235,6 +294,15 @@ def change_guidance(
         if a.recommendation:
             recommendations.append(f"{a.version_id.upper()}: {a.recommendation}")
 
+    # live code-graph blast radius
+    impacts, g_warnings, g_recs, g_floor = _graph_blast_radius(ctx, symbols)
+    warnings.extend(g_warnings)
+    recommendations.extend(g_recs)
+    verdict = _worse(verdict, g_floor)
+    max_blast = max((si.blast_radius for si in impacts), default=0)
+
+    blast_clause = f"the code graph shows up to {max_blast} dependents" if max_blast else ""
+
     if verdict == PROCEED:
         succeeded = [a for a in attempts if not a.is_adverse]
         if succeeded:
@@ -242,22 +310,30 @@ def change_guidance(
                 f"No prior failures in this area. {succeeded[0].version_id.upper()} "
                 "changed similar files successfully - use it as a reference."
             )
+        elif impacts:
+            headline = "No related history; low blast radius in the code graph. Looks safe."
         else:
             headline = "No related history - this looks like new ground."
     elif verdict == CAUTION:
-        headline = (
-            f"{len(adverse)} earlier attempt(s) touching this area went wrong. "
-            "Review them before proceeding."
-        )
+        parts = []
+        if adverse:
+            parts.append(f"{len(adverse)} earlier attempt(s) here went wrong")
+        if g_floor != PROCEED:
+            parts.append(blast_clause)
+        headline = " and ".join(p for p in parts if p) + ". Review before proceeding."
     else:
-        headline = (
-            f"High risk: {len(adverse)} earlier attempt(s) in this exact area failed"
-            f"{' - and more than once' if repeated else ''}. "
-            "Read the linked versions and address the root cause first."
-        )
-        recommendations.append(
-            "Surface these prior failures to the developer and confirm the approach before editing."
-        )
+        parts = []
+        if strong or repeated:
+            parts.append(
+                f"{len(adverse)} earlier attempt(s) in this exact area failed"
+                f"{' - and more than once' if repeated else ''}"
+            )
+            recommendations.append(
+                "Surface these prior failures to the developer and confirm the approach before editing."
+            )
+        if g_floor == HIGH_RISK:
+            parts.append(blast_clause)
+        headline = "High risk: " + " and ".join(p for p in parts if p) + "."
 
     return ChangeGuidance(
         verdict=verdict,
@@ -268,6 +344,9 @@ def change_guidance(
         related_attempts=attempts,
         warnings=warnings,
         recommendations=recommendations,
+        graph_available=ctx.graph.is_available,
+        symbol_impacts=impacts,
+        max_blast_radius=max_blast,
     )
 
 

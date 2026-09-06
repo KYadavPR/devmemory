@@ -272,6 +272,28 @@ export interface PreviousAttempt {
   matched_on: string[];
 }
 
+export interface SymbolRef {
+  name: string;
+  file_path: string;
+  kind: string;
+  start_line: number | null;
+  depth: number;
+  via: string | null;
+}
+
+export interface SymbolImpact {
+  query: string;
+  resolved: boolean;
+  callers_total: number;
+  callees_total: number;
+  type_consumers_total: number;
+  callers: SymbolRef[];
+  callees: SymbolRef[];
+  cochange_files: string[];
+  definitions: SymbolRef[];
+  blast_radius: number;
+}
+
 export interface ChangeGuidance {
   verdict: string;
   headline: string;
@@ -281,6 +303,9 @@ export interface ChangeGuidance {
   related_attempts: PreviousAttempt[];
   warnings: string[];
   recommendations: string[];
+  graph_available: boolean;
+  symbol_impacts: SymbolImpact[];
+  max_blast_radius: number;
 }
 
 export interface TrendPoint {

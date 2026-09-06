@@ -269,7 +269,13 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
 
     @app.post("/api/agent/check", response_model=ChangeGuidance)
     def agent_check(ctx: Ctx, body: AgentCheckRequest) -> ChangeGuidance:
-        return change_guidance(ctx, files=body.files, intent=body.intent, feature=body.feature)
+        return change_guidance(
+            ctx,
+            files=body.files,
+            intent=body.intent,
+            feature=body.feature,
+            symbols=body.symbols,
+        )
 
     # -- the state-aware coding loop -----------------------------------
 

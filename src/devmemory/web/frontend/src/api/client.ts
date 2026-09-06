@@ -156,8 +156,18 @@ export const useSearch = (q: string) =>
     enabled: q.trim().length > 0,
   });
 
-export const checkChange = (files: string[], intent: string, feature?: string) =>
-  apiPost<ChangeGuidance>("/agent/check", { files, intent: intent || null, feature: feature || null });
+export const checkChange = (
+  files: string[],
+  intent: string,
+  symbols: string[] = [],
+  feature?: string,
+) =>
+  apiPost<ChangeGuidance>("/agent/check", {
+    files,
+    intent: intent || null,
+    feature: feature || null,
+    symbols,
+  });
 
 // --- Genie chat (Databricks) ----------------------------------------------
 

@@ -124,6 +124,36 @@ def test_change_guidance_proceed_on_new_ground(
     assert guidance.warnings == []
 
 
+def test_change_guidance_uses_graph_blast_radius(
+    project: ProjectContext, git_repo: TmpGitRepo, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from devmemory.adapters.graph import SymbolImpact, SymbolRef
+
+    _seed(project, git_repo)
+
+    def fake_impact(symbol: str, **_kw: object) -> SymbolImpact:
+        return SymbolImpact(
+            query=symbol,
+            resolved=True,
+            callers_total=25,
+            callers=[SymbolRef(name="c1", file_path="a.py"), SymbolRef(name="c2", file_path="b.py")],
+        )
+
+    monkeypatch.setattr(project.graph, "_binary", "/opt/entire-graph")
+    monkeypatch.setattr(project.graph, "symbol_impact", fake_impact)
+
+    guidance = change_guidance(
+        project,
+        files=["brand_new_module.py"],
+        intent="add a feature",
+        symbols=["core_helper"],
+    )
+    assert guidance.graph_available
+    assert guidance.max_blast_radius == 25
+    assert guidance.verdict == HIGH_RISK  # escalated purely by fan-out
+    assert any("core_helper" in w and "caller" in w for w in guidance.warnings)
+
+
 def test_api_agent_endpoints(project: ProjectContext, git_repo: TmpGitRepo) -> None:
     from fastapi.testclient import TestClient
 

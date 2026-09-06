@@ -122,6 +122,7 @@ class AgentCheckRequest(BaseModel):
     files: list[str] = []
     intent: str | None = None
     feature: str | None = None
+    symbols: list[str] = []  # names or path/to/file.py:line - graph blast radius
 
 
 # --- state-aware coding loop ---------------------------------------------------

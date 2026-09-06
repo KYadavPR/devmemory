@@ -116,7 +116,9 @@ def refresh_state(ctx: ProjectContext, task_id: str) -> NormalizedState:
     tests = collectors.collect_tests(
         ctx, command=task.test_command, output_dir=ctx.paths.cache_dir / "taskloop" / task_id
     )
-    impact = collectors.collect_impact(ctx, head_sha=git.commit_sha)
+    impact = collectors.collect_impact(
+        ctx, head_sha=git.commit_sha, base_commit=task.base_commit
+    )
 
     # persist the test run
     if tests.status is not TestRunStatus.NOT_RUN:

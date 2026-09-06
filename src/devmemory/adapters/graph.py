@@ -89,6 +89,40 @@ class GraphImpact(BaseModel):
         ][:10]
 
 
+class SymbolRef(BaseModel):
+    name: str
+    file_path: str
+    kind: str = "symbol"
+    start_line: int | None = None
+    depth: int = 1
+    via: str | None = None  # intermediate symbol on a 2-hop path
+
+
+class SymbolImpact(BaseModel):
+    """`entire graph impact` for one symbol: who breaks if you change it."""
+
+    query: str
+    resolved: bool = False
+    callers_total: int = 0
+    callees_total: int = 0
+    type_consumers_total: int = 0
+    callers: list[SymbolRef] = Field(default_factory=list)
+    callees: list[SymbolRef] = Field(default_factory=list)
+    cochange_files: list[str] = Field(default_factory=list)
+    definitions: list[SymbolRef] = Field(default_factory=list)  # set when the name is ambiguous
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def blast_radius(self) -> int:
+        """Everything downstream that a behaviour change could break."""
+        return self.callers_total + self.type_consumers_total
+
+    @property
+    def affected_files(self) -> list[str]:
+        """Files with a caller that could break - not the softer co-change set."""
+        return sorted({r.file_path for r in self.callers if r.file_path})
+
+
 class GraphAdapter:
     def __init__(
         self,
@@ -148,6 +182,61 @@ class GraphAdapter:
             _log.warning("graph.bad_json", rev=rev)
             return None
         return _parse_commit(data)
+
+    def diff_impact(self, base: str, head: str = "HEAD") -> GraphImpact | None:
+        """Entity-level change list between two refs (cumulative, unlike ``commit``)."""
+        if self._binary is None or not base:
+            return None
+        proc = self._run(
+            "diff",
+            "--json",
+            "--max-seconds",
+            str(self._max_seconds),
+            "--base",
+            base,
+            "--head",
+            head,
+            timeout=self._timeout,
+        )
+        if proc is None or proc.returncode != 0 or not proc.stdout.strip():
+            if proc is not None:
+                _log.warning("graph.diff_failed", base=base, head=head, stderr=proc.stderr[:400])
+            return None
+        try:
+            return _parse_commit(json.loads(proc.stdout))
+        except json.JSONDecodeError:
+            _log.warning("graph.bad_json", base=base, head=head)
+            return None
+
+    def symbol_impact(self, symbol: str, *, depth: int = 2, limit: int = 15) -> SymbolImpact | None:
+        """Blast radius for changing one symbol: direct + transitive callers, callees,
+        type consumers, historically co-changing files.
+
+        ``symbol`` is a bare name or ``path/to/file.py:line`` (the file:line form is
+        unambiguous - prefer it when you have a location).
+        """
+        if self._binary is None or not symbol.strip():
+            return None
+        proc = self._run(
+            "impact",
+            "--symbol",
+            symbol,
+            "--format",
+            "json",
+            "--depth",
+            str(depth),
+            "--limit",
+            str(limit),
+            timeout=self._timeout,
+        )
+        if proc is None or not proc.stdout.strip():
+            return None
+        try:
+            data = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            _log.warning("graph.bad_json", symbol=symbol)
+            return None
+        return _parse_symbol_impact(symbol, data)
 
     # -- process plumbing ------------------------------------------------
 
@@ -209,6 +298,63 @@ def _parse_commit(data: object) -> GraphImpact | None:
     )
 
 
+def _sym_section(node: object) -> tuple[int, list[SymbolRef]]:
+    if not isinstance(node, dict):
+        return 0, []
+    total = int(node.get("total") or 0)
+    refs: list[SymbolRef] = []
+    for entry in node.get("entries") or []:
+        if not isinstance(entry, dict):
+            continue
+        ep = entry.get("endpoint")
+        if not isinstance(ep, dict):
+            continue
+        refs.append(
+            SymbolRef(
+                name=str(ep.get("name") or ep.get("qualified_name") or "?"),
+                file_path=str(ep.get("file_path") or ""),
+                kind=str(ep.get("kind") or "symbol"),
+                start_line=_opt_int(ep.get("start_line")),
+                depth=int(entry.get("depth") or 1),
+                via=_opt_str(entry.get("via")),
+            )
+        )
+    return total, refs
+
+
+def _parse_symbol_impact(query: str, data: object) -> SymbolImpact:
+    if not isinstance(data, dict):
+        return SymbolImpact(query=query)
+    callers_total, callers = _sym_section(data.get("callers"))
+    callees_total, callees = _sym_section(data.get("callees"))
+    types_total, _ = _sym_section(data.get("type_consumers"))
+    _, cochange = _sym_section(data.get("co_changes"))
+    matched = int(data.get("focus_matches_total") or 0)
+    defs: list[SymbolRef] = []
+    if data.get("disambiguation_required"):
+        for d in data.get("definitions") or []:
+            if isinstance(d, dict):
+                defs.append(
+                    SymbolRef(
+                        name=str(d.get("name") or "?"),
+                        file_path=str(d.get("file_path") or ""),
+                        kind=str(d.get("kind") or "symbol"),
+                        start_line=_opt_int(d.get("start_line")),
+                    )
+                )
+    return SymbolImpact(
+        query=query,
+        resolved=matched > 0 and not data.get("disambiguation_required"),
+        callers_total=callers_total,
+        callees_total=callees_total,
+        type_consumers_total=types_total,
+        callers=callers,
+        callees=callees,
+        cochange_files=[r.file_path for r in cochange if r.file_path],
+        definitions=defs,
+    )
+
+
 def _opt_str(value: object) -> str | None:
     return value if isinstance(value, str) and value else None
 
@@ -248,4 +394,11 @@ def _find_binary() -> str | None:
     return None
 
 
-__all__ = ["ChangedEntity", "GraphAdapter", "GraphImpact", "GraphStatus"]
+__all__ = [
+    "ChangedEntity",
+    "GraphAdapter",
+    "GraphImpact",
+    "GraphStatus",
+    "SymbolImpact",
+    "SymbolRef",
+]

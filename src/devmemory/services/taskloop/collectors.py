@@ -220,11 +220,15 @@ def _classify_tests(outcome: TestOutcome) -> TestRunStatus:
 # --- graph (optional) --------------------------------------------------
 
 
-def collect_impact(ctx: ProjectContext, *, head_sha: str | None) -> StateImpact:
+def collect_impact(
+    ctx: ProjectContext, *, head_sha: str | None, base_commit: str | None = None
+) -> StateImpact:
     """A small, useful change-impact count from the Entire ``graph`` plugin.
 
-    Not a visualization, not a graph DB (§8). If the plugin is unavailable the
-    result is ``available=False`` with a reason and the state still works.
+    Cumulative for the task: the entity-level diff from ``base_commit`` to HEAD
+    (falls back to the last commit alone when there is no base). Not a
+    visualization, not a graph DB (§8). If the plugin is unavailable the result
+    is ``available=False`` with a reason and the state still works.
     """
     graph = ctx.graph
     try:
@@ -234,7 +238,10 @@ def collect_impact(ctx: ProjectContext, *, head_sha: str | None) -> StateImpact:
         if not head_sha:
             return StateImpact(available=False, reason="no commit to analyze")
 
-        impact = graph.commit_impact(head_sha)
+        if base_commit and base_commit != head_sha:
+            impact = graph.diff_impact(base_commit, "HEAD") or graph.commit_impact(head_sha)
+        else:
+            impact = graph.commit_impact(head_sha)
         if impact is None:
             return StateImpact(available=False, reason="graph returned no impact for this commit")
 

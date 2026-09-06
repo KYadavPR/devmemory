@@ -129,6 +129,81 @@ def test_adapter_degrades_on_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     assert GraphAdapter(".", binary="/opt/entire-graph").commit_impact("HEAD") is None
 
 
+_IMPACT_SAMPLE = {
+    "focus_matches_total": 1,
+    "disambiguation_required": False,
+    "callers": {
+        "total": 2,
+        "entries": [
+            {
+                "endpoint": {
+                    "name": "cart_total",
+                    "file_path": "pricing/core.py",
+                    "kind": "function",
+                    "start_line": 12,
+                },
+                "depth": 1,
+            },
+            {
+                "endpoint": {"name": "quote", "file_path": "pricing/core.py", "kind": "function"},
+                "depth": 2,
+                "via": "cart_total",
+            },
+        ],
+    },
+    "callees": {"total": 1, "entries": [{"endpoint": {"name": "base_rate", "file_path": "pricing/core.py", "kind": "function"}}]},
+    "type_consumers": {"total": 0, "entries": None},
+    "co_changes": {"total": 1, "entries": [{"endpoint": {"name": "metrics.json", "file_path": "metrics.json", "kind": "module"}}]},
+}
+
+
+def test_symbol_impact_parses_blast_radius(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **_kw: object) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return _fake_proc(json.dumps(_IMPACT_SAMPLE))
+
+    monkeypatch.setattr(graph_mod.subprocess, "run", fake_run)
+    si = GraphAdapter(".", binary="/opt/entire-graph").symbol_impact("apply_discount")
+
+    assert si is not None and si.resolved
+    assert si.callers_total == 2 and si.callees_total == 1
+    assert si.blast_radius == 2  # callers + type consumers
+    assert si.affected_files == ["pricing/core.py"]
+    assert si.cochange_files == ["metrics.json"]
+    assert si.callers[1].via == "cart_total"
+    assert "impact" in calls[0] and "--symbol" in calls[0]
+
+
+def test_symbol_impact_ambiguous_is_unresolved(monkeypatch: pytest.MonkeyPatch) -> None:
+    payload = {
+        "focus_matches_total": 0,
+        "disambiguation_required": True,
+        "definitions": [
+            {"name": "run", "file_path": "a.py", "kind": "function", "start_line": 3},
+            {"name": "run", "file_path": "b.py", "kind": "function", "start_line": 9},
+        ],
+    }
+    monkeypatch.setattr(graph_mod.subprocess, "run", lambda *a, **k: _fake_proc(json.dumps(payload)))
+    si = GraphAdapter(".", binary="/opt/entire-graph").symbol_impact("run")
+    assert si is not None and not si.resolved
+    assert len(si.definitions) == 2
+
+
+def test_diff_impact_reuses_commit_parser(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **_kw: object) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return _fake_proc(json.dumps(_SAMPLE))
+
+    monkeypatch.setattr(graph_mod.subprocess, "run", fake_run)
+    impact = GraphAdapter(".", binary="/opt/entire-graph").diff_impact("base123", "HEAD")
+    assert impact is not None and impact.entity_count == 3
+    assert "diff" in calls[0] and "--base" in calls[0] and "--head" in calls[0]
+
+
 def test_adapter_unavailable_without_binary(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(graph_mod, "_find_binary", lambda: None)
     adapter = GraphAdapter(".")
