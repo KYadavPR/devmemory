@@ -34,6 +34,7 @@ from devmemory.cli.search import search_command
 from devmemory.cli.serve import serve_command
 from devmemory.cli.show import show_command
 from devmemory.cli.status import status_command
+from devmemory.cli.task import state_command, task_app
 from devmemory.domain.errors import DevMemoryError
 from devmemory.logging import configure_logging
 
@@ -140,6 +141,8 @@ app.command(name="analytics")(handle_errors(analytics_command))
 app.add_typer(databricks_app, name="databricks")
 app.command(name="serve")(handle_errors(serve_command))
 app.command(name="mcp")(handle_errors(mcp_command))
+app.add_typer(task_app, name="task")
+app.command(name="state")(handle_errors(state_command))
 
 
 def main() -> None:

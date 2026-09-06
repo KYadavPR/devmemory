@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from devmemory.adapters.graph import GraphImpact
+from devmemory.domain.enums import RequirementStatus
+from devmemory.domain.taskloop import Issue, NormalizedState
 from devmemory.services.agent_context import (
     ChangeGuidance,
     ProjectBrief,
@@ -27,6 +29,7 @@ from devmemory.services.agent_context import (
 from devmemory.services.analytics import AnalyticsSummary, analytics_summary
 from devmemory.services.context import ProjectContext
 from devmemory.services.memory import MemoryQuery, PreviousAttempt, previous_attempts
+from devmemory.services.taskloop import engine as taskloop
 from devmemory.services.trace import DevelopmentTrace, development_trace
 
 if TYPE_CHECKING:
@@ -36,6 +39,11 @@ _INSTRUCTIONS = """\
 DevMemory records every AI-assisted change as a Development Version: the Git diff,
 the Entire checkpoint (intent + agent + model), the test and metric results, and
 whether it regressed anything.
+
+State-aware coding loop: call get_state(task_id) before starting or resuming
+work, do the implementation with your own tools, commit, then refresh_state to
+re-collect evidence and get the new status (IN_PROGRESS / NEEDS_WORK / READY /
+BLOCKED). Continue while NEEDS_WORK; stop at READY; escalate at BLOCKED.
 
 Call check_before_change BEFORE editing files - it reports whether this area has
 failed here before. Use get_project_context for orientation, get_version_history
@@ -146,6 +154,70 @@ def build_server(repo_path: Path | str | None = None) -> FastMCP:
         feature attempts, file churn, agent effectiveness, trend, and
         repeatedly-failed approaches."""
         return analytics_summary(ctx())
+
+    # -- the state-aware coding loop -------------------------------------
+
+    @mcp.tool
+    def create_task(goal: str, test_command: str | None = None) -> NormalizedState:
+        """Start a task: normalize ``goal`` into explicit requirements, pin the
+        base commit, and return the first state. Call this once per human task,
+        then drive the loop with get_state / refresh_state."""
+        task = taskloop.create_task(ctx(), goal=goal, test_command=test_command)
+        return taskloop.get_state(ctx(), task.id)
+
+    @mcp.tool
+    def get_state(task_id: str) -> NormalizedState:
+        """The current normalized project state for a task: requirements, git,
+        checkpoint, tests, impact, unresolved items, recommended focus, and the
+        overall status. Read this before starting or resuming work. It orients
+        you - still inspect the real repository with your own tools."""
+        return taskloop.get_state(ctx(), task_id)
+
+    @mcp.tool
+    def refresh_state(task_id: str) -> NormalizedState:
+        """Re-collect all evidence (git, Entire, tests, optional graph),
+        re-evaluate requirements, recompute the overall status, store a snapshot,
+        and return the complete new state. Call this after you commit meaningful
+        progress."""
+        return taskloop.refresh_state(ctx(), task_id)
+
+    @mcp.tool
+    def get_checkpoint(checkpoint_id: str) -> dict[str, object]:
+        """Compact metadata for one Entire checkpoint: intent, agent, model,
+        associated commit, sessions, token total. Not a full transcript."""
+        return taskloop.get_checkpoint(ctx(), checkpoint_id)
+
+    @mcp.tool
+    def report_issue(task_id: str, description: str, blocking: bool = False) -> Issue:
+        """Record an unresolved item for a task. Set ``blocking=True`` when you
+        cannot safely continue without a human decision - that forces the task to
+        BLOCKED on the next refresh."""
+        return taskloop.report_issue(
+            ctx(), task_id=task_id, description=description, blocking=blocking
+        )
+
+    @mcp.tool
+    def set_requirement_status(
+        task_id: str, requirement_id: str, status: str, note: str = ""
+    ) -> NormalizedState:
+        """Record your own verdict for one requirement (status: COMPLETE |
+        PARTIAL | INCOMPLETE | UNKNOWN) after you have implemented and verified
+        it. The engine still independently checks tests + tree state before it
+        will report READY. Returns the refreshed state."""
+        return taskloop.set_requirement_status(
+            ctx(),
+            task_id=task_id,
+            requirement_id=requirement_id,
+            status=RequirementStatus(status.upper()),
+            note=note,
+        )
+
+    @mcp.tool
+    def mark_complete(task_id: str) -> NormalizedState:
+        """Request a completion evaluation. This runs a full refresh and returns
+        the state - it never blindly marks READY. You are done only if the
+        returned overall_status is READY."""
+        return taskloop.mark_complete(ctx(), task_id)
 
     return mcp
 

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "devmemory": {
+      "command": "devmemory",
+      "args": ["mcp", "--repo", "."]
+    }
+  }
+}

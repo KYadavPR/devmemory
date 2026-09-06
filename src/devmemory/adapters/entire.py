@@ -173,6 +173,17 @@ class EntireAdapter:
             return []
         return [d for d in data if isinstance(d, dict)][:limit]
 
+    def list_sessions(self, *, limit: int = 50) -> list[dict[str, object]]:
+        """Raw ``entire session list --json`` rows (session_id, agent, status, …).
+
+        Empty list when the CLI is absent, disabled, or the subcommand changed -
+        never raises. A session can span many checkpoints and commits (§7).
+        """
+        data = self._run_json("session", "list", "--json")
+        if not isinstance(data, list):
+            return []
+        return [d for d in data if isinstance(d, dict)][:limit]
+
     def transcript(self, checkpoint_id: str, *, session_index: int = 0) -> str | None:
         """Compact JSONL transcript for a checkpoint session (CLI, then git ref)."""
         proc = self._run(

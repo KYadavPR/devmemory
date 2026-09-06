@@ -86,10 +86,66 @@ class AssociationMethod(StrEnum):
         }[self]
 
 
+class TaskStatus(StrEnum):
+    """Where a task stands in the state-aware coding loop.
+
+    Evidence-based, never a claim of certainty: ``READY`` means the collected
+    evidence supports completion, not that completion is proven.
+    """
+
+    IN_PROGRESS = "IN_PROGRESS"
+    NEEDS_WORK = "NEEDS_WORK"
+    READY = "READY"
+    BLOCKED = "BLOCKED"
+
+    @property
+    def is_terminal(self) -> bool:
+        """``READY``/``BLOCKED`` end the loop; the agent must stop or ask a human."""
+        return self in {TaskStatus.READY, TaskStatus.BLOCKED}
+
+
+class RequirementStatus(StrEnum):
+    """Whether one normalized requirement is satisfied by the evidence."""
+
+    COMPLETE = "COMPLETE"
+    PARTIAL = "PARTIAL"
+    INCOMPLETE = "INCOMPLETE"
+    UNKNOWN = "UNKNOWN"
+
+    @property
+    def is_satisfied(self) -> bool:
+        return self is RequirementStatus.COMPLETE
+
+
+class IssueStatus(StrEnum):
+    """An unresolved item raised by the agent or the engine."""
+
+    OPEN = "OPEN"
+    RESOLVED = "RESOLVED"
+
+
+class TestRunStatus(StrEnum):
+    """Outcome of the configured test command for one state refresh.
+
+    ``FAILED_TO_PARSE`` is deliberate: the command ran but its output could not
+    be parsed, so counts are unknown rather than invented.
+    """
+
+    NOT_RUN = "NOT_RUN"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+    FAILED_TO_PARSE = "FAILED_TO_PARSE"
+    ERROR = "ERROR"
+
+
 __all__ = [
     "AssociationMethod",
     "ChangeType",
     "FeatureStatus",
+    "IssueStatus",
     "MetricDirection",
+    "RequirementStatus",
+    "TaskStatus",
+    "TestRunStatus",
     "VersionStatus",
 ]

@@ -6,6 +6,30 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — State-aware coding loop
+
+- A `Task` layer on top of the existing evidence collectors (Git, Entire, tests,
+  graph). At creation the human goal is normalized into explicit requirements
+  (LLM when a key is configured, else a deterministic rule split) and the base
+  commit is pinned.
+- **State Engine** (`devmemory.services.taskloop`): every `refresh_state`
+  re-runs the collectors, re-evaluates not-yet-complete requirements against the
+  Git diff / checkpoint intent / test results, recomputes an evidence-based
+  status (`IN_PROGRESS` / `NEEDS_WORK` / `READY` / `BLOCKED`), and appends an
+  immutable `state_snapshots` row — the loop is observable as snapshot #1 → #2.
+  It never touches application code.
+- Migration `0004_taskloop`: `tasks`, `requirements`, `issues`,
+  `task_test_runs`, `state_snapshots`, `task_commits`.
+- MCP tools: `create_task`, `get_state`, `refresh_state`,
+  `set_requirement_status`, `report_issue`, `mark_complete`, `get_checkpoint`.
+- CLI: `devmemory task new|state|refresh|complete|requirement|issue|resolve|list|history`
+  and `devmemory state` (the debug dashboard).
+- `EntireAdapter.list_sessions()` (machine-readable `entire session list --json`).
+- `AGENTS.md` (the agent operating protocol) and a workspace `.mcp.json`.
+- Every collector degrades gracefully: no Entire → empty checkpoint; no graph →
+  `impact.available = false`; tests can't run → `ERROR` / `FAILED_TO_PARSE`
+  (never invented counts); no git → `BLOCKED`.
+
 ### Changed — Dashboard redesign (Vite + React)
 
 - The dashboard is now a Vite + React + TypeScript app (`src/devmemory/web/frontend/`),

@@ -149,3 +149,57 @@ def test_cli_mcp_print_config(repo: TmpGitRepo, monkeypatch: pytest.MonkeyPatch)
     cfg = json.loads(result.output)
     assert cfg["mcpServers"]["devmemory"]["command"] == "devmemory"
     assert cfg["mcpServers"]["devmemory"]["args"][0] == "mcp"
+
+
+# --- the state-aware coding loop over MCP -----------------------------------
+
+
+def test_taskloop_tools_registered(repo: TmpGitRepo) -> None:
+    async def factory() -> set[str]:
+        from fastmcp import Client
+
+        async with Client(build_server(repo.path)) as client:
+            return {t.name for t in await client.list_tools()}
+
+    names = _sync(factory)
+    assert {
+        "create_task",
+        "get_state",
+        "refresh_state",
+        "get_checkpoint",
+        "report_issue",
+        "mark_complete",
+        "set_requirement_status",
+    } <= names
+
+
+def test_loop_over_mcp_create_refresh_state(
+    repo: TmpGitRepo, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for var in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    server = build_server(repo.path)
+
+    created = _call(server, "create_task", {"goal": "Document the auth module; tests pass"})
+    assert created.task.id == "TASK-001"
+    assert created.overall_status in {"NEEDS_WORK", "IN_PROGRESS"}
+
+    state = _call(server, "get_state", {"task_id": "TASK-001"})
+    assert state.task.id == "TASK-001"
+    assert [r.id for r in state.requirements][:1] == ["R1"]
+    assert state.git.commit_sha  # git collector ran
+
+    refreshed = _call(server, "refresh_state", {"task_id": "TASK-001"})
+    assert refreshed.snapshot_id is not None
+
+
+def test_report_blocking_issue_over_mcp(repo: TmpGitRepo) -> None:
+    server = build_server(repo.path)
+    _call(server, "create_task", {"goal": "Ship auth; tests pass"})
+    _call(
+        server,
+        "report_issue",
+        {"task_id": "TASK-001", "description": "need a human decision", "blocking": True},
+    )
+    state = _call(server, "refresh_state", {"task_id": "TASK-001"})
+    assert state.overall_status == "BLOCKED"

@@ -167,4 +167,70 @@ def _call_gemini(key: str, model: str, prompt: str) -> str:
     return resp.text or ""
 
 
-__all__ = ["LLMProvider"]
+def call_llm(
+    prompt: str, *, system: str, providers: list[str], model: str | None = None
+) -> str | None:
+    """Try each provider in order; return the first non-empty completion, or None.
+
+    Used by callers outside the analysis chain (e.g. the task-loop requirement
+    evaluator). Keys come from the environment; any error falls through.
+    """
+    for raw_name in providers:
+        name = raw_name.strip().lower()
+        if name not in ("anthropic", "openai", "gemini"):
+            continue
+        key = resolve_llm_api_key(name)
+        chosen = model or _DEFAULT_MODEL.get(name)
+        if not key or chosen is None:
+            continue
+        try:
+            if name == "anthropic":
+                text = _call_anthropic_with_system(key, chosen, prompt, system)
+            elif name == "openai":
+                text = _call_openai_with_system(key, chosen, prompt, system)
+            else:
+                text = _call_gemini_with_system(key, chosen, prompt, system)
+        except Exception as exc:
+            _log.warning("llm.call_failed", provider=name, error=str(exc))
+            continue
+        if text and text.strip():
+            return text
+    return None
+
+
+def _call_anthropic_with_system(key: str, model: str, prompt: str, system: str) -> str:
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=key)
+    message = client.messages.create(
+        model=model,
+        max_tokens=1500,
+        system=system,
+        messages=[{"role": "user", "content": prompt}],
+        output_config={"effort": "low"},
+    )
+    return "".join(b.text for b in message.content if b.type == "text")
+
+
+def _call_openai_with_system(key: str, model: str, prompt: str, system: str) -> str:
+    import openai
+
+    client = openai.OpenAI(api_key=key)
+    resp = client.responses.create(model=model, instructions=system, input=prompt)
+    return resp.output_text or ""
+
+
+def _call_gemini_with_system(key: str, model: str, prompt: str, system: str) -> str:
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=key)
+    resp = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=types.GenerateContentConfig(system_instruction=system),
+    )
+    return resp.text or ""
+
+
+__all__ = ["LLMProvider", "call_llm"]
