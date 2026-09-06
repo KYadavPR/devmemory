@@ -23,10 +23,16 @@ from devmemory.api.schemas import (
     AgentCheckRequest,
     ComparisonResponse,
     FeatureDetail,
+    IssueRequest,
     ProjectSummary,
+    RequirementUpdateRequest,
     SearchResponse,
+    SnapshotSummary,
+    TaskCreateRequest,
+    TaskSummary,
     VersionListItem,
 )
+from devmemory.domain.enums import RequirementStatus
 from devmemory.domain.errors import DevMemoryError
 from devmemory.domain.models import (
     Analysis,
@@ -34,6 +40,8 @@ from devmemory.domain.models import (
     DevelopmentVersion,
     EntireStatus,
 )
+from devmemory.domain.taskloop import NormalizedState
+from devmemory.services import taskloop
 from devmemory.services.agent_context import (
     ChangeGuidance,
     ProjectBrief,
@@ -222,6 +230,63 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.post("/api/agent/check", response_model=ChangeGuidance)
     def agent_check(ctx: Ctx, body: AgentCheckRequest) -> ChangeGuidance:
         return change_guidance(ctx, files=body.files, intent=body.intent, feature=body.feature)
+
+    # -- the state-aware coding loop -----------------------------------
+
+    @app.get("/api/tasks", response_model=list[TaskSummary])
+    def tasks(ctx: Ctx) -> list[TaskSummary]:
+        return [mappers.task_summary(t) for t in taskloop.list_tasks(ctx)]
+
+    @app.post("/api/tasks", response_model=NormalizedState, status_code=201)
+    def create_task(ctx: Ctx, body: TaskCreateRequest) -> NormalizedState:
+        task = taskloop.create_task(ctx, goal=body.goal, test_command=body.test_command)
+        return taskloop.get_state(ctx, task.id)
+
+    @app.get("/api/tasks/{task_id}/state", response_model=NormalizedState)
+    def task_state(ctx: Ctx, task_id: str) -> NormalizedState:
+        return taskloop.get_state(ctx, task_id)
+
+    @app.post("/api/tasks/{task_id}/refresh", response_model=NormalizedState)
+    def task_refresh(ctx: Ctx, task_id: str) -> NormalizedState:
+        return taskloop.refresh_state(ctx, task_id)
+
+    @app.post("/api/tasks/{task_id}/complete", response_model=NormalizedState)
+    def task_complete(ctx: Ctx, task_id: str) -> NormalizedState:
+        return taskloop.mark_complete(ctx, task_id)
+
+    @app.get("/api/tasks/{task_id}/snapshots", response_model=list[SnapshotSummary])
+    def task_snapshots(
+        ctx: Ctx,
+        task_id: str,
+        limit: Annotated[int, Query(ge=1, le=200)] = 40,
+    ) -> list[SnapshotSummary]:
+        return [
+            mappers.snapshot_summary(s) for s in taskloop.list_snapshots(ctx, task_id, limit=limit)
+        ]
+
+    @app.post("/api/tasks/{task_id}/issues", response_model=NormalizedState)
+    def task_issue(ctx: Ctx, task_id: str, body: IssueRequest) -> NormalizedState:
+        taskloop.report_issue(
+            ctx, task_id=task_id, description=body.description, blocking=body.blocking
+        )
+        return taskloop.refresh_state(ctx, task_id)
+
+    @app.post("/api/tasks/{task_id}/issues/{issue_id}/resolve", response_model=NormalizedState)
+    def task_issue_resolve(ctx: Ctx, task_id: str, issue_id: int) -> NormalizedState:
+        taskloop.resolve_issue(ctx, issue_id=issue_id)
+        return taskloop.refresh_state(ctx, task_id)
+
+    @app.post("/api/tasks/{task_id}/requirements/{req_id}", response_model=NormalizedState)
+    def task_set_requirement(
+        ctx: Ctx, task_id: str, req_id: str, body: RequirementUpdateRequest
+    ) -> NormalizedState:
+        try:
+            status = RequirementStatus(body.status.upper())
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=f"invalid status {body.status!r}") from exc
+        return taskloop.set_requirement_status(
+            ctx, task_id=task_id, requirement_id=req_id, status=status, note=body.note
+        )
 
     # -- restore ------------------------------------------------
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useFeatures, useVersions } from "@/api/client";
+import { useFeatures, useTasks, useVersions } from "@/api/client";
 import { Icon, type IconName } from "./Icon";
 import { StatusBadge } from "./primitives";
 import { featureName, vlabel } from "@/lib/format";
@@ -12,7 +12,7 @@ interface Item {
   icon: IconName;
   badge?: React.ReactNode;
   run: () => void;
-  group: "Go to" | "Versions" | "Features" | "Actions";
+  group: "Go to" | "Tasks" | "Versions" | "Features" | "Actions";
 }
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -24,6 +24,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   const { data: versions = [] } = useVersions(500, { enabled: open });
   const { data: features = [] } = useFeatures({ enabled: open });
+  const { data: tasks = [] } = useTasks({ enabled: open });
 
   useEffect(() => {
     if (open) {
@@ -41,6 +42,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const items = useMemo<Item[]>(() => {
     const nav: Item[] = [
       { id: "n-overview", title: "Overview", icon: "overview", group: "Go to", run: () => go("/") },
+      { id: "n-tasks", title: "Tasks", icon: "target", group: "Go to", run: () => go("/tasks") },
       { id: "n-timeline", title: "Timeline", icon: "timeline", group: "Go to", run: () => go("/timeline") },
       { id: "n-features", title: "Features", icon: "features", group: "Go to", run: () => go("/features") },
       { id: "n-intel", title: "Intelligence", icon: "intelligence", group: "Go to", run: () => go("/intelligence") },
@@ -69,8 +71,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       group: "Features",
       run: () => go(`/feature/${encodeURIComponent(featureName(f.feature_id))}`),
     }));
-    return [...nav, ...vs, ...fs];
-  }, [versions, features]);
+    const ts: Item[] = tasks.map((t) => ({
+      id: `t-${t.id}`,
+      title: `${t.id} — ${t.goal}`,
+      hint: `${t.requirements_complete}/${t.requirements_total} requirements`,
+      icon: "target",
+      badge: <StatusBadge status={t.status} />,
+      group: "Tasks",
+      run: () => go(`/task/${t.id}`),
+    }));
+    return [...nav, ...ts, ...vs, ...fs];
+  }, [versions, features, tasks]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();

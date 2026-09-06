@@ -124,14 +124,65 @@ class AgentCheckRequest(BaseModel):
     feature: str | None = None
 
 
+# --- state-aware coding loop ---------------------------------------------------
+
+
+class TaskCreateRequest(BaseModel):
+    goal: str
+    test_command: str | None = None
+
+
+class IssueRequest(BaseModel):
+    description: str
+    blocking: bool = False
+
+
+class RequirementUpdateRequest(BaseModel):
+    status: str
+    note: str = ""
+
+
+class TaskSummary(BaseModel):
+    """One row in the tasks list."""
+
+    id: str
+    goal: str
+    status: str
+    branch: str
+    requirements_total: int
+    requirements_complete: int
+    test_command: str | None
+    updated_at: str | None
+
+
+class SnapshotSummary(BaseModel):
+    """One point on a task's state timeline (the full state stays server-side)."""
+
+    id: int | None
+    overall_status: str
+    commit_sha: str | None
+    checkpoint_id: str | None
+    tests_passed: int
+    tests_failed: int
+    tests_status: str
+    requirements_total: int
+    requirements_complete: int
+    created_at: str | None
+
+
 __all__ = [
     "AgentCheckRequest",
     "ComparisonResponse",
     "FeatureDetail",
     "FeatureHistoryPoint",
+    "IssueRequest",
     "MetricChange",
     "ProjectSummary",
+    "RequirementUpdateRequest",
     "SearchHit",
     "SearchResponse",
+    "SnapshotSummary",
+    "TaskCreateRequest",
+    "TaskSummary",
     "VersionListItem",
 ]

@@ -396,6 +396,14 @@ def latest_task(ctx: ProjectContext) -> Task | None:
     return TaskRepository(ctx.db).latest()
 
 
+def list_tasks(ctx: ProjectContext) -> list[Task]:
+    return TaskRepository(ctx.db).list_tasks()
+
+
+def get_task(ctx: ProjectContext, task_id: str) -> Task:
+    return TaskRepository(ctx.db).get(task_id) or _raise_not_found(task_id)
+
+
 def list_snapshots(ctx: ProjectContext, task_id: str, *, limit: int = 20) -> list[StateSnapshot]:
     return TaskRepository(ctx.db).snapshots(task_id, limit=limit)
 
@@ -405,8 +413,10 @@ __all__ = [
     "create_task",
     "get_checkpoint",
     "get_state",
+    "get_task",
     "latest_task",
     "list_snapshots",
+    "list_tasks",
     "mark_complete",
     "refresh_state",
     "report_issue",

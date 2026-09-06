@@ -5,6 +5,8 @@ import { TopBar } from "@/components/TopBar";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Overview } from "@/routes/Overview";
+import { Tasks } from "@/routes/Tasks";
+import { TaskDetail } from "@/routes/TaskDetail";
 import { Timeline } from "@/routes/Timeline";
 import { VersionDetail } from "@/routes/VersionDetail";
 import { Features } from "@/routes/Features";
@@ -52,6 +54,8 @@ export function App() {
             <div className="route-fade" key={location.pathname}>
               <Routes>
                 <Route path="/" element={<Overview />} />
+                <Route path="/tasks" element={<Tasks />} />
+                <Route path="/task/:id" element={<TaskDetail />} />
                 <Route path="/timeline" element={<Timeline />} />
                 <Route path="/version/:id" element={<VersionDetail />} />
                 <Route path="/features" element={<Features />} />

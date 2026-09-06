@@ -407,3 +407,111 @@ export interface GraphImpact {
   entity_count: number;
   max_dependents: number;
 }
+
+// --- state-aware coding loop ------------------------------------------------
+
+export type TaskStatus = "IN_PROGRESS" | "NEEDS_WORK" | "READY" | "BLOCKED";
+export type RequirementStatus = "COMPLETE" | "PARTIAL" | "INCOMPLETE" | "UNKNOWN";
+export type TestRunStatus =
+  | "NOT_RUN"
+  | "PASSED"
+  | "FAILED"
+  | "FAILED_TO_PARSE"
+  | "ERROR";
+
+export interface StateTask {
+  id: string;
+  goal: string;
+  status: TaskStatus;
+}
+
+export interface StateRequirement {
+  id: string;
+  description: string;
+  status: RequirementStatus;
+  reason: string;
+}
+
+export interface StateCheckpoint {
+  current_id: string | null;
+  last_committed_id: string | null;
+  session_id: string | null;
+  commit_sha: string | null;
+  association: string | null;
+}
+
+export interface StateGit {
+  branch: string;
+  commit_sha: string | null;
+  commit_subject: string | null;
+  files_changed: number;
+  lines_added: number;
+  lines_deleted: number;
+  working_tree_clean: boolean;
+  available: boolean;
+  reason: string | null;
+}
+
+export interface StateTests {
+  command: string | null;
+  passed: number;
+  failed: number;
+  skipped: number;
+  status: TestRunStatus;
+  exit_code: number | null;
+  output_path: string | null;
+}
+
+export interface StateImpact {
+  affected_files: number;
+  affected_tests: number;
+  available: boolean;
+  reason: string | null;
+  details: string[];
+}
+
+export interface StateIssue {
+  id: number | null;
+  description: string;
+  kind: string;
+  blocking: boolean;
+}
+
+export interface NormalizedState {
+  task: StateTask;
+  requirements: StateRequirement[];
+  checkpoint: StateCheckpoint;
+  git: StateGit;
+  tests: StateTests;
+  impact: StateImpact;
+  unresolved: StateIssue[];
+  findings: string[];
+  recommended_focus: string[];
+  overall_status: TaskStatus;
+  snapshot_id: number | null;
+  refreshed_at: string | null;
+}
+
+export interface TaskSummary {
+  id: string;
+  goal: string;
+  status: TaskStatus;
+  branch: string;
+  requirements_total: number;
+  requirements_complete: number;
+  test_command: string | null;
+  updated_at: string | null;
+}
+
+export interface SnapshotSummary {
+  id: number | null;
+  overall_status: TaskStatus;
+  commit_sha: string | null;
+  checkpoint_id: string | null;
+  tests_passed: number;
+  tests_failed: number;
+  tests_status: TestRunStatus;
+  requirements_total: number;
+  requirements_complete: number;
+  created_at: string | null;
+}

@@ -12,6 +12,9 @@ import type {
   ProjectSummary,
   SearchResponse,
   VersionListItem,
+  NormalizedState,
+  TaskSummary,
+  SnapshotSummary,
 } from "./types";
 
 const BASE = "/api";
@@ -152,3 +155,40 @@ export const useSearch = (q: string) =>
 
 export const checkChange = (files: string[], intent: string, feature?: string) =>
   apiPost<ChangeGuidance>("/agent/check", { files, intent: intent || null, feature: feature || null });
+
+// --- state-aware coding loop ------------------------------------------------
+
+export const useTasks = (opts?: QOpts<TaskSummary[]>) =>
+  useQuery({ queryKey: ["tasks"], queryFn: () => apiGet<TaskSummary[]>("/tasks"), ...opts });
+
+export const useTaskState = (id: string | undefined, opts?: QOpts<NormalizedState>) =>
+  useQuery({
+    queryKey: ["task-state", id],
+    queryFn: () => apiGet<NormalizedState>(`/tasks/${id}/state`),
+    enabled: !!id,
+    ...opts,
+  });
+
+export const useTaskSnapshots = (id: string | undefined, opts?: QOpts<SnapshotSummary[]>) =>
+  useQuery({
+    queryKey: ["task-snapshots", id],
+    queryFn: () => apiGet<SnapshotSummary[]>(`/tasks/${id}/snapshots`),
+    enabled: !!id,
+    ...opts,
+  });
+
+export const createTask = (goal: string, testCommand?: string) =>
+  apiPost<NormalizedState>("/tasks", { goal, test_command: testCommand || null });
+
+export const refreshTask = (id: string) => apiPost<NormalizedState>(`/tasks/${id}/refresh`, {});
+
+export const completeTask = (id: string) => apiPost<NormalizedState>(`/tasks/${id}/complete`, {});
+
+export const reportIssue = (id: string, description: string, blocking: boolean) =>
+  apiPost<NormalizedState>(`/tasks/${id}/issues`, { description, blocking });
+
+export const resolveIssue = (id: string, issueId: number) =>
+  apiPost<NormalizedState>(`/tasks/${id}/issues/${issueId}/resolve`, {});
+
+export const setRequirement = (id: string, reqId: string, status: string, note: string) =>
+  apiPost<NormalizedState>(`/tasks/${id}/requirements/${reqId}`, { status, note });

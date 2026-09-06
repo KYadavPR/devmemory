@@ -7,9 +7,14 @@ here decides *how* code is written - that stays with Antigravity.
 """
 
 from devmemory.services.taskloop.engine import (
+    TaskNotFoundError,
     create_task,
     get_checkpoint,
     get_state,
+    get_task,
+    latest_task,
+    list_snapshots,
+    list_tasks,
     mark_complete,
     refresh_state,
     report_issue,
@@ -18,9 +23,14 @@ from devmemory.services.taskloop.engine import (
 )
 
 __all__ = [
+    "TaskNotFoundError",
     "create_task",
     "get_checkpoint",
     "get_state",
+    "get_task",
+    "latest_task",
+    "list_snapshots",
+    "list_tasks",
     "mark_complete",
     "refresh_state",
     "report_issue",

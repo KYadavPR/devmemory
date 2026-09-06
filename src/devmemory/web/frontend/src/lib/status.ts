@@ -6,14 +6,22 @@ const STATUS_TONE: Record<string, Tone> = {
   SUCCESS: "ok",
   COMPLETE: "ok",
   PASS: "ok",
+  PASSED: "ok",
+  READY: "ok",
   REGRESSION: "bad",
   ERROR: "bad",
   FAILED: "bad",
+  BLOCKED: "bad",
+  INCOMPLETE: "bad",
   PARTIAL_SUCCESS: "warn",
   NEEDS_REVIEW: "warn",
   PARTIAL: "warn",
+  NEEDS_WORK: "warn",
+  FAILED_TO_PARSE: "warn",
   IN_PROGRESS: "info",
   NOT_STARTED: "neutral",
+  NOT_RUN: "neutral",
+  UNKNOWN: "neutral",
 };
 
 export const statusTone = (s: string | null | undefined): Tone =>
@@ -28,6 +36,16 @@ const STATUS_LABEL: Record<string, string> = {
   IN_PROGRESS: "In progress",
   COMPLETE: "Complete",
   NOT_STARTED: "Not started",
+  NEEDS_WORK: "Needs work",
+  READY: "Ready",
+  BLOCKED: "Blocked",
+  PARTIAL: "Partial",
+  INCOMPLETE: "Incomplete",
+  UNKNOWN: "Unknown",
+  NOT_RUN: "Not run",
+  PASSED: "Passed",
+  FAILED: "Failed",
+  FAILED_TO_PARSE: "Unparsed",
 };
 
 export const statusLabel = (s: string | null | undefined): string =>

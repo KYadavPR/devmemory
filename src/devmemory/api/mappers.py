@@ -9,9 +9,13 @@ from devmemory.api.schemas import (
     MetricChange,
     ProjectSummary,
     SearchHit,
+    SnapshotSummary,
+    TaskSummary,
     VersionListItem,
 )
+from devmemory.domain.enums import RequirementStatus
 from devmemory.domain.models import DevelopmentVersion
+from devmemory.domain.taskloop import StateSnapshot, Task
 from devmemory.services.features import FeatureWithHistory
 from devmemory.services.projects import ProjectStatusReport
 from devmemory.services.versions import VersionDiff
@@ -139,10 +143,45 @@ def feature_detail(fh: FeatureWithHistory) -> FeatureDetail:
     )
 
 
+def task_summary(task: Task) -> TaskSummary:
+    return TaskSummary(
+        id=task.id,
+        goal=task.goal,
+        status=task.status.value,
+        branch=task.branch,
+        requirements_total=len(task.requirements),
+        requirements_complete=sum(
+            1 for r in task.requirements if r.status is RequirementStatus.COMPLETE
+        ),
+        test_command=task.test_command,
+        updated_at=_iso(task.updated_at),
+    )
+
+
+def snapshot_summary(snap: StateSnapshot) -> SnapshotSummary:
+    s = snap.state
+    return SnapshotSummary(
+        id=snap.id,
+        overall_status=snap.overall_status.value,
+        commit_sha=s.git.commit_sha,
+        checkpoint_id=s.checkpoint.current_id,
+        tests_passed=s.tests.passed,
+        tests_failed=s.tests.failed,
+        tests_status=s.tests.status.value,
+        requirements_total=len(s.requirements),
+        requirements_complete=sum(
+            1 for r in s.requirements if r.status is RequirementStatus.COMPLETE
+        ),
+        created_at=_iso(snap.created_at),
+    )
+
+
 __all__ = [
     "comparison_response",
     "feature_detail",
     "project_summary",
     "search_hit",
+    "snapshot_summary",
+    "task_summary",
     "version_list_item",
 ]

@@ -885,3 +885,67 @@
 textarea.input {
   line-height: 1.5;
 }
+
+/* ---- tasks (state-aware coding loop) ------------------------------- */
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--dur-1) var(--ease);
+}
+.task-row:last-child {
+  border-bottom: none;
+}
+.task-row:hover {
+  background: var(--bg-sunken);
+}
+.task-row__id {
+  font-size: 0.8125rem;
+  font-weight: 620;
+  flex: none;
+}
+.task-row__main {
+  flex: 1;
+  min-width: 0;
+}
+.task-row__goal {
+  font-size: 0.9rem;
+}
+.task-row__meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.req-row {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+.req-row:last-child {
+  border-bottom: none;
+}
+.req-row__status {
+  cursor: pointer;
+  border: none;
+  font: inherit;
+  justify-self: start;
+  transition: filter var(--dur-1) var(--ease);
+}
+.req-row__status:hover {
+  filter: brightness(1.08);
+}
+.req-row__status:disabled {
+  cursor: default;
+  opacity: 0.6;
+}

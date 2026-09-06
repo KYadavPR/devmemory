@@ -9,6 +9,7 @@ or a checkpoint id.
 
 from __future__ import annotations
 
+import re
 import time
 from pathlib import Path
 
@@ -20,6 +21,18 @@ from devmemory.logging import get_logger
 from devmemory.services.context import ProjectContext
 
 _log = get_logger(__name__)
+
+# Build-tool / test-runner droppings. The engine runs the test command on every
+# refresh, so these churn constantly - they are never meaningful task work and
+# must not keep a task out of READY (whether untracked or accidentally tracked).
+_JUNK_PATH = re.compile(
+    r"(^|/)(__pycache__|\.pytest_cache|\.ruff_cache|\.mypy_cache|node_modules"
+    r"|\.tox|\.nox|htmlcov|\.coverage)(/|$)|\.pyc$|\.pyo$|(^|/)\.DS_Store$"
+)
+
+
+def _meaningful(paths: list[str]) -> list[str]:
+    return [p for p in paths if not _JUNK_PATH.search(p)]
 
 
 # --- git --------------------------------------------------------------------
@@ -40,6 +53,11 @@ def collect_git(ctx: ProjectContext, *, base_commit: str | None) -> StateGit:
         head = git.head_sha()
         subject = git.commit("HEAD").subject if head else None
 
+        # "clean" for the READY gate ignores test-runner droppings (the engine
+        # itself creates __pycache__/.pytest_cache every refresh).
+        dirty = _meaningful(wt.staged) + _meaningful(wt.unstaged) + _meaningful(wt.untracked)
+        tree_clean = not dirty
+
         files_changed = lines_added = lines_deleted = 0
         if head:
             # Cumulative task progress: base_commit..working-tree. Falls back to
@@ -53,7 +71,7 @@ def collect_git(ctx: ProjectContext, *, base_commit: str | None) -> StateGit:
             except Exception as exc:
                 _log.warning("taskloop.git.diffstat_failed", error=str(exc))
 
-        _log.info("taskloop.collector.git", branch=wt.branch, clean=wt.is_clean)
+        _log.info("taskloop.collector.git", branch=wt.branch, clean=tree_clean)
         return StateGit(
             branch=wt.branch or "(detached)",
             commit_sha=head,
@@ -61,7 +79,7 @@ def collect_git(ctx: ProjectContext, *, base_commit: str | None) -> StateGit:
             files_changed=files_changed,
             lines_added=lines_added,
             lines_deleted=lines_deleted,
-            working_tree_clean=wt.is_clean,
+            working_tree_clean=tree_clean,
             available=True,
         )
     except Exception as exc:
