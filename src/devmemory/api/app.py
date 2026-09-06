@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from devmemory.__about__ import __version__
+from devmemory.adapters.graph import GraphImpact
 from devmemory.api import mappers
 from devmemory.api.schemas import (
     AgentCheckRequest,
@@ -39,6 +40,7 @@ from devmemory.services.agent_context import (
 from devmemory.services.analytics import AnalyticsSummary, analytics_summary
 from devmemory.services.context import ProjectContext
 from devmemory.services.features import get_feature, list_features
+from devmemory.services.impact import version_impact
 from devmemory.services.memory import MemoryQuery, PreviousAttempt, previous_attempts
 from devmemory.services.projects import project_status
 from devmemory.services.restore import (
@@ -151,6 +153,17 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.get("/api/versions/{ref}/trace", response_model=DevelopmentTrace)
     def version_trace(ctx: Ctx, ref: str) -> DevelopmentTrace:
         return development_trace(ctx, ref)
+
+    @app.get("/api/versions/{ref}/impact", response_model=GraphImpact)
+    def version_impact_endpoint(ctx: Ctx, ref: str) -> GraphImpact:
+        impact = version_impact(ctx, ref, compute_if_missing=ctx.config.graph.enabled)
+        if impact is None:
+            raise HTTPException(
+                status_code=404,
+                detail="no change-impact analysis for this version "
+                "(install the Entire `graph` plugin)",
+            )
+        return impact
 
     # -- comparison --------------------------------------------------
 

@@ -6,6 +6,28 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 12: change-impact analysis (Entire `graph` plugin)
+
+- `GraphAdapter`: wraps `entire graph commit --json` (the official, no-egress
+  local code graph). Discovers the `entire-graph` binary in the managed plugin
+  dirs; degrades to `None` when missing or slow — never blocks a checkpoint.
+  Parses the entity-level change list (added / removed / renamed /
+  signature-changed / body-changed) with per-entity dependent counts; `hotspots`
+  ranks the risky ones.
+- Opt-in: needs `entire plugin install graph` and `graph.enabled = true`. New
+  `GraphSettings` config section (binary, timeouts).
+- Migration `0003_graph.sql` + `GraphImpactRepository` — one row per version,
+  full JSON payload plus denormalized summary columns. Local-only; never
+  published to Databricks.
+- Pipeline stage `collect_graph_impact` (after `refresh_feature`) — skipped when
+  disabled/uninstalled, degraded on analysis failure.
+- `services.impact.version_impact`: stored result, or computed once on demand.
+- CLI `devmemory impact <ref>` (`--json`, `--stored-only`): the entity change
+  list, a hotspots table, and a "review before keeping" callout for
+  signature/removal changes with dependents.
+- API `GET /api/versions/{ref}/impact`. Dashboard: a "Change impact" panel on the
+  version page. MCP tool `get_change_impact`.
+
 ### Added — Phase 11: AI context API + MCP server
 
 - `services.agent_context`: agent-facing, JSON-first shapes shared by the MCP

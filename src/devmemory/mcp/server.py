@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from devmemory.adapters.graph import GraphImpact
 from devmemory.services.agent_context import (
     ChangeGuidance,
     ProjectBrief,
@@ -129,6 +130,15 @@ def build_server(repo_path: Path | str | None = None) -> FastMCP:
         from devmemory.services.versions import search_versions as _search
 
         return [version_brief(v) for v in _search(ctx(), query, limit=limit)]
+
+    @mcp.tool
+    def get_change_impact(ref: str) -> GraphImpact | None:
+        """The entity-level blast radius for a version (Entire `graph` plugin):
+        added / removed / renamed / signature-changed / body-changed symbols with
+        dependent counts. ``None`` if the plugin is not installed."""
+        from devmemory.services.impact import version_impact
+
+        return version_impact(ctx(), ref)
 
     @mcp.tool
     def get_analytics() -> AnalyticsSummary:

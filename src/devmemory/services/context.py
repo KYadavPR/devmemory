@@ -12,6 +12,7 @@ from types import TracebackType
 
 from devmemory.adapters.entire import EntireAdapter
 from devmemory.adapters.git import GitAdapter
+from devmemory.adapters.graph import GraphAdapter
 from devmemory.config import DevMemoryConfig
 from devmemory.domain.errors import ProjectNotInitializedError
 from devmemory.paths import ProjectPaths, find_project_paths
@@ -25,6 +26,7 @@ class ProjectContext:
     db: Database
     git: GitAdapter
     entire: EntireAdapter
+    graph: GraphAdapter
 
     @classmethod
     def load(cls, start: Path | str | None = None, *, thread_safe: bool = False) -> ProjectContext:
@@ -60,7 +62,13 @@ class ProjectContext:
             repo=config.entire.repo,
             git=git,
         )
-        return cls(paths=paths, config=config, db=db, git=git, entire=entire)
+        graph = GraphAdapter(
+            paths.repo_root,
+            binary=config.graph.binary,
+            timeout=config.graph.timeout_seconds,
+            max_seconds=config.graph.max_seconds,
+        )
+        return cls(paths=paths, config=config, db=db, git=git, entire=entire, graph=graph)
 
     def close(self) -> None:
         self.db.close()

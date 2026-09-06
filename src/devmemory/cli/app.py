@@ -23,6 +23,7 @@ from devmemory.cli.analytics import analytics_command, databricks_app
 from devmemory.cli.checkpoint import checkpoint_command
 from devmemory.cli.compare import compare_command, diff_command
 from devmemory.cli.history import history_command
+from devmemory.cli.impact import impact_command
 from devmemory.cli.init import init_command
 from devmemory.cli.mcp import mcp_command
 from devmemory.cli.memory import memory_command
@@ -116,6 +117,7 @@ app.command(name="history")(handle_errors(history_command))
 app.command(name="show")(handle_errors(show_command))
 app.command(name="diff")(handle_errors(diff_command))
 app.command(name="compare")(handle_errors(compare_command))
+app.command(name="impact")(handle_errors(impact_command))
 app.command(name="search")(handle_errors(search_command))
 app.command(name="memory")(handle_errors(memory_command))
 app.command(name="restore")(handle_errors(restore_command))

@@ -197,10 +197,11 @@ function tlItem(v) {
 }
 
 async function renderVersion(id) {
-  const [v, trace, attempts] = await Promise.all([
+  const [v, trace, attempts, impact] = await Promise.all([
     api("/versions/" + id),
     api(`/versions/${id}/trace`),
     api(`/versions/${id}/attempts`).catch(() => []),
+    api(`/versions/${id}/impact`).catch(() => null),
   ]);
   let diff = "";
   try { diff = await api(`/versions/${id}/diff`); } catch {}
@@ -255,6 +256,10 @@ async function renderVersion(id) {
       <div class="card-head">⚠ Previous attempts touching this area</div>
       <div class="card-pad grid" style="gap:10px">${attempts.map(attemptCard).join("")}</div>
     </div>` : "") +
+    (impact && impact.entities && impact.entities.length ? `<div class="card" style="margin-top:16px">
+      <div class="card-head">Change impact <span class="muted" style="text-transform:none">· entire graph · ${impact.entities.length} entities</span></div>
+      <div class="card-pad">${impactTable(impact)}</div>
+    </div>` : "") +
     (v.analysis && v.analysis.summary ? `<div class="card" style="margin-top:16px">
       <div class="card-head">Analysis <span class="muted" style="text-transform:none">· ${esc(v.analysis.provider)}</span></div>
       <div class="card-pad"><p>${esc(v.analysis.summary)}</p>${v.analysis.recommendation ? `<p style="margin-top:8px"><b>Recommendation:</b> ${esc(v.analysis.recommendation)}</p>` : ""}</div>
@@ -263,6 +268,19 @@ async function renderVersion(id) {
       <div class="card-head">Diff · ${esc(short(v.parent_commit))} → ${esc(short(v.git_commit))}</div>
       ${renderDiff(diff)}
     </div>` : "");
+}
+
+function impactTable(impact) {
+  const rows = impact.entities.slice().sort((a, b) => (b.dependents_count - a.dependents_count));
+  const cls = { removed: "down", signature_changed: "down", renamed: "", added: "up", body_changed: "" };
+  return `<table class="mini"><thead><tr><th>change</th><th>entity</th><th>file</th><th style="text-align:right">deps</th></tr></thead><tbody>${
+    rows.slice(0, 40).map((e) => `<tr>
+      <td>${badge(e.change_type, cls[e.change_type] || "")}</td>
+      <td>${esc(e.kind)} <b>${esc(e.name)}</b></td>
+      <td class="muted mono" style="font-size:11px">${esc(e.path)}</td>
+      <td style="text-align:right">${e.dependents_count || ""}</td>
+    </tr>`).join("")
+  }</tbody></table>${rows.length > 40 ? `<div class="muted" style="margin-top:6px">+${rows.length - 40} more</div>` : ""}`;
 }
 
 function traceNode(n) {

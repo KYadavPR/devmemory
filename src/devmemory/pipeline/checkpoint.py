@@ -38,6 +38,7 @@ from devmemory.services.features import refresh_feature_status
 from devmemory.services.memory import MemoryQuery, previous_attempts
 from devmemory.services.versions import create_version_from_event
 from devmemory.storage.artifacts import ArtifactStore
+from devmemory.storage.graph_impacts import GraphImpactRepository
 from devmemory.storage.versions import VersionRepository
 
 _log = get_logger(__name__)
@@ -246,6 +247,28 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
                 st.data["feature_status"] = updated.status.value if updated else None
             else:
                 st.status = "skipped"
+
+        with run.stage("collect_graph_impact") as st:
+            if not ctx.config.graph.enabled:
+                st.status = "skipped"
+            elif not ctx.graph.is_available:
+                st.status = "skipped"
+                st.detail = "entire-graph not installed (`entire plugin install graph`)"
+            else:
+                try:
+                    impact = ctx.graph.commit_impact(version.git_commit)
+                    if impact is None:
+                        st.status = "degraded"
+                        st.detail = "graph analysis returned nothing"
+                    else:
+                        GraphImpactRepository(ctx.db).set(version.version_id, impact)
+                        st.data |= {
+                            "entities": impact.entity_count,
+                            "max_dependents": impact.max_dependents,
+                        }
+                except (OSError, RuntimeError) as exc:  # never fatal
+                    st.status = "degraded"
+                    st.detail = str(exc)
 
         with run.stage("publish_databricks") as st:
             try:

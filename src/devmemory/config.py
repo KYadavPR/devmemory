@@ -119,6 +119,22 @@ class AnalysisSettings(_Section):
     model: str | None = None
 
 
+class GraphSettings(_Section):
+    """Optional change-impact analysis via the Entire `graph` plugin.
+
+    Off by default - it needs `entire plugin install graph` and rebuilds a local
+    code graph per run (a few seconds). Fully local, no egress.
+    """
+
+    enabled: bool = False
+    binary: str | None = Field(
+        default=None,
+        description="Absolute path to the `entire-graph` binary. Defaults to a managed-dir lookup.",
+    )
+    timeout_seconds: int = 90
+    max_seconds: int = 120
+
+
 class WebSettings(_Section):
     host: str = "127.0.0.1"
     port: int = 8760
@@ -140,6 +156,7 @@ class DevMemoryConfig(_Section):
     regression: RegressionSettings = Field(default_factory=RegressionSettings)
     databricks: DatabricksSettings = Field(default_factory=DatabricksSettings)
     analysis: AnalysisSettings = Field(default_factory=AnalysisSettings)
+    graph: GraphSettings = Field(default_factory=GraphSettings)
     web: WebSettings = Field(default_factory=WebSettings)
 
     # -- construction --------------------------------------------------------------
@@ -257,6 +274,7 @@ __all__ = [
     "DatabricksSettings",
     "DevMemoryConfig",
     "EntireSettings",
+    "GraphSettings",
     "MetricSettings",
     "RegressionSettings",
     "TestSettings",
