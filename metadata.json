@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1TZH204G079SB3TP8DAHC2F",
+  "strategy": "manual-commit",
+  "branch": "docs/project-details",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/devmemory/services/taskloop/requirements.py",
+    "tests/test_api.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1074,
+    "cache_creation_tokens": 2877640,
+    "cache_read_tokens": 146722496,
+    "output_tokens": 341201,
+    "api_call_count": 538
+  }
+}
