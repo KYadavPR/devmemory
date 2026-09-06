@@ -1,10 +1,14 @@
-"""LLM-backed analysis providers (Anthropic / OpenAI / Gemini).
+"""LLM-backed analysis providers (Anthropic / OpenAI / Gemini / OpenRouter).
 
-One class, three back ends, selected by name. Each call sends only the normalized
+One class, four back ends, selected by name. Each call sends only the normalized
 :class:`AnalysisInput` (plus a diff excerpt *iff* explicitly enabled in config) -
 never raw source, never a transcript. The API key comes from the environment.
 Any failure returns ``None`` so the fallback chain moves on; ``rules`` is always
 the tail.
+
+``openrouter`` is OpenAI-wire-compatible - it reuses the ``openai`` SDK pointed at
+``https://openrouter.ai/api/v1`` and takes namespaced model ids like
+``anthropic/claude-3.5-sonnet`` or ``openai/gpt-4o-mini``.
 """
 
 from __future__ import annotations
@@ -23,8 +27,13 @@ _log = get_logger(__name__)
 _DEFAULT_MODEL = {
     "anthropic": "claude-opus-5",
     "openai": "gpt-5",
-    "gemini": "gemini-2.5-pro",
+    "gemini": "gemini-flash-latest",  # stable alias; free-tier friendly
+    "openrouter": "openai/gpt-4o-mini",  # override with a "…:free" id for no-cost use
 }
+
+_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+_SUPPORTED = ("anthropic", "openai", "gemini", "openrouter")
 
 _SYSTEM = (
     "You are a senior engineer reviewing one AI-assisted change. You are given "
@@ -52,11 +61,13 @@ class LLMProvider(AnalysisProvider):
         prompt = _prompt(data)
         try:
             if self.name == "anthropic":
-                raw = _call_anthropic(key, self._model, prompt)
+                raw = _call_anthropic(key, self._model, prompt, _SYSTEM)
             elif self.name == "openai":
-                raw = _call_openai(key, self._model, prompt)
+                raw = _call_openai(key, self._model, prompt, _SYSTEM)
             elif self.name == "gemini":
-                raw = _call_gemini(key, self._model, prompt)
+                raw = _call_gemini(key, self._model, prompt, _SYSTEM)
+            elif self.name == "openrouter":
+                raw = _call_openrouter(key, self._model, prompt, _SYSTEM)
             else:
                 return None
         except Exception as exc:
@@ -125,48 +136,6 @@ def _opt(value: object) -> str | None:
     return text or None
 
 
-# --- back ends (lazy SDK imports) -------------------------------------------
-
-
-def _call_anthropic(key: str, model: str, prompt: str) -> str:
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=key)
-    message = client.messages.create(
-        model=model,
-        max_tokens=1500,
-        system=_SYSTEM,
-        messages=[{"role": "user", "content": prompt}],
-        output_config={"effort": "low"},
-    )
-    return "".join(b.text for b in message.content if b.type == "text")
-
-
-def _call_openai(key: str, model: str, prompt: str) -> str:
-    import openai
-
-    client = openai.OpenAI(api_key=key)
-    resp = client.responses.create(
-        model=model,
-        instructions=_SYSTEM,
-        input=prompt,
-    )
-    return resp.output_text or ""
-
-
-def _call_gemini(key: str, model: str, prompt: str) -> str:
-    from google import genai
-    from google.genai import types
-
-    client = genai.Client(api_key=key)
-    resp = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(system_instruction=_SYSTEM),
-    )
-    return resp.text or ""
-
-
 def call_llm(
     prompt: str, *, system: str, providers: list[str], model: str | None = None
 ) -> str | None:
@@ -177,19 +146,14 @@ def call_llm(
     """
     for raw_name in providers:
         name = raw_name.strip().lower()
-        if name not in ("anthropic", "openai", "gemini"):
+        if name not in _SUPPORTED:
             continue
         key = resolve_llm_api_key(name)
         chosen = model or _DEFAULT_MODEL.get(name)
         if not key or chosen is None:
             continue
         try:
-            if name == "anthropic":
-                text = _call_anthropic_with_system(key, chosen, prompt, system)
-            elif name == "openai":
-                text = _call_openai_with_system(key, chosen, prompt, system)
-            else:
-                text = _call_gemini_with_system(key, chosen, prompt, system)
+            text = _dispatch(name, key, chosen, prompt, system)
         except Exception as exc:
             _log.warning("llm.call_failed", provider=name, error=str(exc))
             continue
@@ -198,7 +162,22 @@ def call_llm(
     return None
 
 
-def _call_anthropic_with_system(key: str, model: str, prompt: str, system: str) -> str:
+# --- back ends (lazy SDK imports) -------------------------------------------
+
+
+def _dispatch(name: str, key: str, model: str, prompt: str, system: str) -> str:
+    if name == "anthropic":
+        return _call_anthropic(key, model, prompt, system)
+    if name == "openai":
+        return _call_openai(key, model, prompt, system)
+    if name == "gemini":
+        return _call_gemini(key, model, prompt, system)
+    if name == "openrouter":
+        return _call_openrouter(key, model, prompt, system)
+    return ""
+
+
+def _call_anthropic(key: str, model: str, prompt: str, system: str) -> str:
     import anthropic
 
     client = anthropic.Anthropic(api_key=key)
@@ -212,7 +191,7 @@ def _call_anthropic_with_system(key: str, model: str, prompt: str, system: str) 
     return "".join(b.text for b in message.content if b.type == "text")
 
 
-def _call_openai_with_system(key: str, model: str, prompt: str, system: str) -> str:
+def _call_openai(key: str, model: str, prompt: str, system: str) -> str:
     import openai
 
     client = openai.OpenAI(api_key=key)
@@ -220,7 +199,23 @@ def _call_openai_with_system(key: str, model: str, prompt: str, system: str) -> 
     return resp.output_text or ""
 
 
-def _call_gemini_with_system(key: str, model: str, prompt: str, system: str) -> str:
+def _call_openrouter(key: str, model: str, prompt: str, system: str) -> str:
+    """OpenRouter speaks the OpenAI chat-completions wire format."""
+    import openai
+
+    client = openai.OpenAI(api_key=key, base_url=_OPENROUTER_BASE_URL)
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=1500,
+    )
+    return resp.choices[0].message.content or ""
+
+
+def _call_gemini(key: str, model: str, prompt: str, system: str) -> str:
     from google import genai
     from google.genai import types
 

@@ -15,7 +15,7 @@ from devmemory.logging import get_logger
 
 _log = get_logger(__name__)
 
-_LLM_PROVIDERS = {"anthropic", "openai", "gemini"}
+_LLM_PROVIDERS = {"anthropic", "openai", "gemini", "openrouter"}
 
 
 def build_providers(names: list[str], *, model: str | None = None) -> list[AnalysisProvider]:

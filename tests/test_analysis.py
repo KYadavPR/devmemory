@@ -185,6 +185,29 @@ def test_run_analysis_uses_first_successful_provider() -> None:
 def test_llm_provider_without_key_returns_none() -> None:
     assert LLMProvider("anthropic").analyze(_input()) is None
     assert LLMProvider("openai").analyze(_input()) is None
+    assert LLMProvider("openrouter").analyze(_input()) is None
+
+
+def test_openrouter_is_a_known_llm_provider() -> None:
+    chain = build_providers(["openrouter", "rules"])
+    assert chain[0].name == "openrouter"
+    assert isinstance(chain[-1], RulesProvider)
+
+
+def test_openrouter_uses_openai_wire_via_call_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+    import devmemory.analysis.llm as llm_mod
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-v1-test")
+    captured: dict[str, object] = {}
+
+    def fake(name: str, key: str, model: str, prompt: str, system: str) -> str:
+        captured.update(name=name, key=key, model=model)
+        return '{"ok": true}'
+
+    monkeypatch.setattr(llm_mod, "_dispatch", fake)
+    out = llm_mod.call_llm("hi", system="s", providers=["openrouter"])
+    assert out == '{"ok": true}'
+    assert captured == {"name": "openrouter", "key": "sk-or-v1-test", "model": "openai/gpt-4o-mini"}
 
 
 def test_llm_parse_handles_fences_and_junk() -> None:
