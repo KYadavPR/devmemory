@@ -1,0 +1,1155 @@
+<task-notification>
+<task-id>bsll27c44</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>C:\Users\BANU\AppData\Local\Temp\claude\d--Hackathons-TechWeek\fcec3b82-fe78-4cb6-b1dc-40e4f8a72893\tasks\bsll27c44.output</output-file>
+<status>completed</status>
+<summary>Background command "cd /d/Hackathons/TechWeek &amp;&amp; .venv/Scripts/python.exe -m pytest -q 2&gt;&amp;1 | tail -6" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+understand the prompt below, dont start over, but integrate this as a new feature, understand what its asking and then integrate it
+
+
+
+# Build the MVP: State-Aware AI Coding Loop
+
+You are building a local-first MVP for a developer-experience system that creates a closed feedback loop around an AI coding agent.
+
+The goal is NOT to build a full autonomous software-engineering platform yet.
+
+The goal is to prove this end-to-end loop:
+
+HUMAN TASK
+→ ANTIGRAVITY AGENT
+→ repository changes
+→ tests
+→ Git commit
+→ Entire checkpoint/context
+→ state collection
+→ state normalization
+→ MCP
+→ ANTIGRAVITY reads the new state
+→ agent decides what to do next
+→ continues working
+→ repeat until READY or BLOCKED
+
+The most important requirement is that this loop must actually work on a real local repository.
+
+---
+
+# 1. Core architecture
+
+Implement exactly these logical components:
+
+1. Antigravity
+
+   * The AI coding agent.
+   * It must remain responsible for understanding the repository, deciding implementation, editing files, running commands, running tests, and deciding what to do next.
+
+2. MCP Server
+
+   * The interface between Antigravity and our state system.
+   * It must expose a small number of tools that return structured project state and checkpoint information.
+
+3. State Engine
+
+   * Aggregates evidence from Git, Entire, tests, and optionally Entire Graph.
+   * Produces one normalized machine-readable project state.
+   * It must NOT modify application code.
+
+4. Git Collector
+
+   * Reads the current repository state.
+
+5. Entire Collector
+
+   * Reads the latest relevant Entire session/checkpoint information.
+
+6. Test Collector
+
+   * Runs the project's configured test command and captures pass/fail results.
+
+7. Entire Graph Collector
+
+   * Use only a small useful impact query for MVP.
+   * Do not build a graph visualization.
+   * If Graph integration is unavailable or unreliable in the current environment, make the collector optional and fail gracefully.
+
+8. SQLite
+
+   * Store normalized state/history locally.
+   * No PostgreSQL, Redis, Kafka, cloud database, or distributed infrastructure.
+
+9. Minimal dashboard/CLI
+
+   * Show current state for debugging/demo purposes.
+   * Keep the UI simple.
+
+---
+
+# 2. Important architectural principle
+
+Do NOT put the entire repository into the state.
+
+The state tells Antigravity:
+
+* what task is being worked on
+* what has been completed
+* what remains unresolved
+* current Git commit
+* current Entire checkpoint
+* test evidence
+* useful change-impact information
+* recommended focus
+
+Antigravity must still inspect the actual repository using its normal coding tools.
+
+The model workflow must therefore be:
+
+MCP state
+→ understand current situation
+→ inspect repository
+→ reason
+→ modify code
+→ test
+→ commit
+→ refresh state
+→ get new state
+→ continue or stop
+
+Do NOT make the State Engine decide how code should be implemented.
+
+---
+
+# 3. MVP state schema
+
+Create a normalized state object similar to:
+
+{
+"task": {
+"id": "TASK-001",
+"goal": "string",
+"status": "IN_PROGRESS"
+},
+
+"requirements": [
+{
+"id": "R1",
+"description": "string",
+"status": "COMPLETE"
+}
+],
+
+"checkpoint": {
+"current_id": "string|null",
+"last_committed_id": "string|null"
+},
+
+"git": {
+"branch": "main",
+"commit_sha": "string|null",
+"files_changed": 0,
+"lines_added": 0,
+"lines_deleted": 0,
+"working_tree_clean": false
+},
+
+"tests": {
+"command": "string",
+"passed": 0,
+"failed": 0,
+"status": "NOT_RUN"
+},
+
+"impact": {
+"affected_files": 0,
+"affected_tests": 0,
+"available": false
+},
+
+"unresolved": [],
+
+"findings": [],
+
+"recommended_focus": [],
+
+"overall_status": "IN_PROGRESS"
+}
+
+Use only these core metrics for MVP:
+
+1. Requirement status
+2. Current/last relevant checkpoint ID
+3. Git commit SHA
+4. Files changed
+5. Lines added/deleted
+6. Tests passed
+7. Tests failed
+8. Useful change-impact count
+9. Unresolved items
+10. Overall status
+
+Do NOT collect dozens of telemetry metrics.
+
+Do NOT depend on internal/private Antigravity telemetry.
+
+---
+
+# 4. State statuses
+
+Support exactly these main states:
+
+IN_PROGRESS
+NEEDS_WORK
+READY
+BLOCKED
+
+Suggested semantics:
+
+IN_PROGRESS:
+
+* task is actively being worked on
+* no final completion evaluation yet
+
+NEEDS_WORK:
+
+* one or more requirements are incomplete
+* OR tests fail
+* OR unresolved issues exist
+
+READY:
+
+* requirements appear complete
+* relevant tests pass
+* no blocking unresolved items remain
+* working tree is clean or otherwise explicitly accepted
+
+BLOCKED:
+
+* agent cannot safely continue
+* required external/human decision is needed
+* infrastructure/problem prevents meaningful progress
+
+Do not pretend READY means mathematical certainty.
+This is an evidence-based state.
+
+---
+
+# 5. Requirement model
+
+The original human task must be preserved.
+
+At task creation, normalize the user requirement into a small list of explicit requirements.
+
+Example:
+
+Human:
+"Build authentication with login and password reset."
+
+Possible normalized requirements:
+
+R1: User can log in
+R2: Passwords are securely handled
+R3: Password reset exists
+R4: Authentication state is enforced
+R5: Relevant tests exist and pass
+
+The requirement evaluator must use evidence from:
+
+* original task
+* current Git diff
+* relevant checkpoint context
+* tests
+* repository code
+
+Do not determine requirement completion from Git statistics alone.
+
+For MVP, use an LLM-based requirement evaluation layer only where needed.
+Keep the output structured and auditable.
+
+Example:
+
+{
+"requirement_id": "R3",
+"status": "INCOMPLETE",
+"reason": "No implementation evidence for password reset flow"
+}
+
+---
+
+# 6. Git collector
+
+Implement a robust Python Git collector using subprocess calls.
+
+Collect:
+
+* current branch
+* HEAD commit SHA
+* working tree clean/dirty
+* changed files
+* lines added
+* lines deleted
+* latest commit message
+
+Use standard Git commands.
+
+Do not use a GitHub API for local state collection.
+
+Git is the source of truth for committed source code.
+
+---
+
+# 7. Entire collector
+
+The project will use Entire for development-session/checkpoint context.
+
+Do NOT create a custom checkpoint storage system.
+
+Do NOT duplicate Entire's functionality.
+
+Use the installed Entire CLI and inspect its actual commands/version before implementing the collector.
+
+First discover the available commands using:
+
+entire --help
+entire checkpoint --help
+entire status --help
+entire session --help
+entire agent --help
+
+Use machine-readable output where the installed version supports it.
+
+The collector should attempt to retrieve:
+
+* latest relevant checkpoint ID
+* session ID if available
+* relationship to the latest commit if available
+* checkpoint summary/context metadata if available
+
+Do not assume:
+
+"one prompt = one checkpoint"
+
+A session may contain multiple checkpoints/sessions/commits.
+
+For MVP, persist:
+
+* latest relevant checkpoint
+* last committed checkpoint
+* session ID when available
+* associated commit SHA
+
+Do not blindly sum checkpoint token counts or other cumulative metrics.
+
+If an Entire command changes between installed versions, adapt to the installed version rather than hardcoding assumptions from old documentation.
+
+---
+
+# 8. Entire Graph collector
+
+Create a small abstraction:
+
+GraphCollector
+
+Its job:
+
+Input:
+
+* current commit
+* changed files
+
+Output:
+
+{
+"available": true,
+"affected_files": 12,
+"affected_tests": 7,
+"details": []
+}
+
+Only collect information that is actually useful for the decision.
+
+Do NOT build:
+
+* graph database
+* graph UI
+* large dependency visualization
+* custom static-analysis engine
+
+If Entire Graph cannot be accessed in the current environment, return:
+
+{
+"available": false,
+"reason": "..."
+}
+
+The rest of the state system must still work.
+
+---
+
+# 9. Test collector
+
+Create a configurable test runner.
+
+Support a project configuration such as:
+
+project.yaml
+
+or
+
+state-engine.yaml
+
+Example:
+
+test_command: "pytest"
+
+The collector must execute the configured command and capture:
+
+* exit code
+* passed
+* failed
+* command
+* duration
+* raw output path/reference
+
+Do not assume every repository uses pytest.
+
+Make the test command configurable.
+
+For MVP, parsing should support at least:
+
+* pytest
+* npm test
+* npm run test
+
+If parsing fails, still preserve:
+
+{
+"status": "FAILED_TO_PARSE"
+}
+
+rather than inventing counts.
+
+---
+
+# 10. SQLite data model
+
+Use SQLite.
+
+Create tables approximately:
+
+tasks
+requirements
+checkpoints
+commits
+test_runs
+state_snapshots
+issues
+
+Keep it simple.
+
+The most important table is state_snapshots.
+
+Every refresh should create a new state snapshot.
+
+This allows:
+
+State #1
+→ State #2
+→ State #3
+
+and makes the loop observable/debuggable.
+
+---
+
+# 11. MCP server
+
+Implement a local MCP server in Python.
+
+Use the MCP protocol correctly and keep the tool surface small.
+
+Expose these tools:
+
+### get_state
+
+Input:
+
+* task_id
+
+Output:
+
+* current normalized state
+
+### refresh_state
+
+Input:
+
+* task_id
+
+Behavior:
+
+1. inspect Git
+2. inspect Entire
+3. optionally inspect Graph
+4. run configured tests
+5. evaluate/refresh requirements where appropriate
+6. update unresolved items
+7. calculate overall status
+8. store state snapshot
+9. return the complete state
+
+### get_checkpoint
+
+Input:
+
+* checkpoint_id
+
+Output:
+
+* useful checkpoint metadata/context available through Entire
+
+### report_issue
+
+Input:
+
+* task_id
+* description
+
+Behavior:
+
+* persist an unresolved issue
+
+### mark_complete
+
+Input:
+
+* task_id
+
+Behavior:
+
+* trigger a completion evaluation
+* do NOT blindly mark READY
+* verify evidence first
+
+Keep MCP outputs compact and structured.
+
+Do not return huge transcripts by default.
+
+---
+
+# 12. Antigravity MCP integration
+
+Configure the project-local MCP configuration so Antigravity can discover the local MCP server.
+
+Prefer workspace-local MCP configuration rather than making the server globally required.
+
+Use the Antigravity MCP configuration format appropriate to the installed version.
+
+The official Antigravity documentation says custom MCP servers can be configured with workspace-level configuration and are then available to the agent. Use the current installed configuration format rather than assuming an obsolete one.
+
+Create:
+
+.agents/mcp_config.json
+
+only if that is the correct location for the current Antigravity environment.
+
+Do not modify global settings unless necessary.
+
+---
+
+# 13. Agent operating protocol
+
+Create a repository-level AGENTS.md or equivalent Antigravity rule/workflow so the agent follows this loop.
+
+Agent protocol:
+
+1. Before starting or resuming meaningful work, call get_state().
+2. Read the returned state.
+3. Inspect the actual repository based on the state.
+4. Decide the implementation yourself.
+5. Make code changes.
+6. Run relevant tests.
+7. Fix failures.
+8. Before declaring completion, commit the source changes.
+9. Refresh project state.
+10. Get the updated state.
+11. If state == NEEDS_WORK, continue.
+12. If state == BLOCKED, explain the blocker to the human.
+13. If state == READY, stop implementation and report completion.
+
+Important:
+
+The MCP state is NOT a code patch.
+
+Do not blindly obey "recommended_focus" if repository inspection shows it is incorrect.
+Treat it as evidence and guidance.
+
+The agent retains responsibility for implementation decisions.
+
+---
+
+# 14. Closed-loop behavior
+
+This is the most important feature.
+
+Implement this logical loop:
+
+while task_not_terminal:
+
+```
+state = get_state()
+
+if state == READY:
+    stop
+
+if state == BLOCKED:
+    ask_human
+
+inspect_repository()
+
+implement_changes()
+
+run_tests()
+
+commit_changes()
+
+refresh_state()
+
+state = get_state()
+
+if state == NEEDS_WORK:
+    continue
+
+if state == READY:
+    stop
+```
+
+Do not implement this as an infinite background autonomous process.
+
+For MVP, the loop must be controlled by the Antigravity agent conversation and MCP tool calls.
+
+---
+
+# 15. Git workflow
+
+Use:
+
+main = application source branch
+
+Do NOT create a custom second branch for checkpoints.
+
+Let Entire use its native checkpoint storage strategy.
+
+First inspect the installed Entire version and configured backend.
+
+Run:
+
+entire status
+entire configure --help
+
+and inspect the repository configuration.
+
+If the repository is configured with the native git-branch checkpoint backend, understand that its checkpoint branch is managed by Entire.
+
+If the installed version uses the recommended git-refs backend, do not force a custom checkpoint branch just to satisfy an old mental model.
+
+The requirement is:
+
+* source code remains on main
+* Entire checkpoint metadata remains in Entire-managed Git-backed storage
+* state engine reads both
+
+Do not manually create competing checkpoint commits.
+
+---
+
+# 16. GitHub push workflow
+
+Do not push every intermediate file change.
+
+For MVP:
+
+Agent:
+
+1. modifies repository
+2. runs tests
+3. creates Git commit
+4. refreshes state
+5. pushes to origin/main only when the configured policy allows
+
+For the first local demo, support:
+
+git commit
+
+and
+
+git push origin main
+
+as explicit commands.
+
+Do not build GitHub OAuth or GitHub App infrastructure.
+
+Use the user's existing Git authentication.
+
+---
+
+# 17. Safety around pushing
+
+Never automatically force-push.
+
+Never reset --hard without explicit recovery logic.
+
+Never delete branches.
+
+Never rewrite main history.
+
+Before pushing:
+
+* verify branch
+* verify repository
+* verify working tree
+* verify tests/state
+
+If state is NEEDS_WORK, the default behavior should be:
+
+commit locally but do not push
+
+unless an explicit configuration says otherwise.
+
+---
+
+# 18. State refresh triggers
+
+For MVP, support manual/event-driven refresh.
+
+Primary path:
+
+Agent:
+refresh_state()
+→ get_state()
+
+Do NOT build Kafka/event streaming.
+
+Do NOT require a permanently running watcher.
+
+Optionally provide a lightweight local watcher later.
+
+The critical requirement is that the agent can always explicitly request the newest state after making meaningful progress.
+
+---
+
+# 19. Minimal dashboard
+
+Create a simple local dashboard or CLI command:
+
+state-cli status
+
+Display:
+
+TASK
+STATUS
+
+REQUIREMENTS
+x / y
+
+CHECKPOINT
+latest
+
+COMMIT
+SHA
+
+FILES CHANGED
+N
+
+TESTS
+passed / failed
+
+IMPACT
+affected files / tests
+
+UNRESOLVED
+list
+
+NEXT FOCUS
+list
+
+Do not spend significant time on visual design.
+
+The dashboard exists to prove the state loop.
+
+---
+
+# 20. Demo scenario
+
+Create an example/demo project inside:
+
+examples/demo-project
+
+The demo should be small.
+
+Recommended scenario:
+
+Task:
+"Add authentication with login and password reset."
+
+The demo must allow us to intentionally create incomplete state.
+
+Demonstration:
+
+1. Human gives task.
+2. Agent calls get_state().
+3. Agent inspects repository.
+4. Agent implements authentication.
+5. Some requirement or test remains incomplete.
+6. Agent commits.
+7. Entire checkpoint becomes available.
+8. refresh_state() runs.
+9. State becomes NEEDS_WORK.
+10. Agent calls get_state().
+11. Agent sees the unresolved work.
+12. Agent inspects repository again.
+13. Agent fixes it.
+14. Tests pass.
+15. Agent commits again.
+16. refresh_state() runs.
+17. State becomes READY.
+18. Agent calls get_state().
+19. Agent stops and reports completion.
+
+This must work without manually editing the state database.
+
+---
+
+# 21. Failure handling
+
+Every collector must fail gracefully.
+
+If Entire unavailable:
+
+state still works using Git + tests.
+
+If Graph unavailable:
+
+impact.available = false
+
+If tests cannot run:
+
+tests.status = ERROR
+
+If Git is unavailable:
+
+state.status = BLOCKED
+
+Never fabricate metrics.
+
+Never silently return fake checkpoint IDs.
+
+Every error should be visible.
+
+---
+
+# 22. Logging
+
+Add structured local logs.
+
+Log:
+
+timestamp
+task_id
+MCP tool
+collector
+result
+duration
+error if any
+
+Example:
+
+[12:04:12] refresh_state started
+[12:04:12] git collector OK
+[12:04:13] entire collector OK
+[12:04:13] tests OK
+[12:04:14] graph OK
+[12:04:14] state = NEEDS_WORK
+
+Do not log huge raw transcripts by default.
+
+---
+
+# 23. Project structure
+
+Use a clean structure such as:
+
+state-loop/
+│
+├── server/
+│   ├── mcp_server.py
+│   ├── state_engine.py
+│   ├── models.py
+│   ├── config.py
+│   │
+│   └── collectors/
+│       ├── git.py
+│       ├── entire.py
+│       ├── graph.py
+│       └── tests.py
+│
+├── storage/
+│   ├── db.py
+│   └── schema.sql
+│
+├── cli/
+│   └── state_cli.py
+│
+├── examples/
+│   └── demo-project/
+│
+├── tests/
+│
+├── AGENTS.md
+├── README.md
+├── pyproject.toml
+└── .agents/
+└── mcp_config.json
+
+Adapt names if a better Python structure is justified, but keep the separation of concerns.
+
+---
+
+# 24. Implementation order
+
+Do not build everything at once.
+
+Work in these phases.
+
+## Phase 1 — Repository and Git
+
+Make sure:
+
+* repository initializes
+* main branch works
+* GitHub remote works
+* simple commit works
+
+Verify with real commands.
+
+## Phase 2 — State Engine
+
+Implement:
+
+* state model
+* SQLite
+* Git collector
+* test collector
+* initial state calculation
+
+Create unit tests.
+
+## Phase 3 — Entire
+
+Integrate the actual installed Entire CLI.
+
+Verify:
+
+* Entire is enabled
+* a real agent session is captured
+* checkpoint can be listed/read
+* checkpoint/commit relationship can be identified
+
+Do not mock Entire in the end-to-end path.
+
+## Phase 4 — MCP
+
+Expose:
+
+* get_state
+* refresh_state
+* get_checkpoint
+* report_issue
+* mark_complete
+
+Test the MCP server independently.
+
+## Phase 5 — Antigravity integration
+
+Configure workspace MCP.
+
+Create the agent operating instructions.
+
+Verify Antigravity can actually call get_state().
+
+## Phase 6 — Closed loop
+
+Run the complete demo:
+
+task
+→ state
+→ agent
+→ code
+→ tests
+→ commit
+→ Entire
+→ refresh
+→ state
+→ agent
+→ more code
+→ tests
+→ commit
+→ READY
+
+## Phase 7 — Polish
+
+Only after the loop works:
+
+* improve dashboard
+* improve requirement evaluation
+* add Graph impact
+* improve error messages
+* improve demo
+
+---
+
+# 25. Hard constraints
+
+Do NOT:
+
+* build a generic autonomous coding agent
+* replace Antigravity
+* create a custom checkpoint implementation
+* dump the entire repository into MCP
+* create 30+ metrics
+* add unnecessary infrastructure
+* create a cloud service
+* create a distributed event bus
+* build a giant UI
+* fabricate Entire data
+* pretend requirement completion is perfectly deterministic
+* assume one prompt equals one checkpoint
+
+The MVP is successful if the state-aware feedback loop actually works.
+
+---
+
+# 26. Definition of done
+
+Do not consider the task complete until these are all demonstrated.
+
+### Git
+
+A real application commit exists on main.
+
+### Entire
+
+A real Entire checkpoint exists and is associated with the development work.
+
+### State Engine
+
+The state engine can combine:
+
+* Git
+* Entire
+* tests
+* optional Graph
+
+into one state.
+
+### MCP
+
+Antigravity can call:
+
+get_state()
+refresh_state()
+get_checkpoint()
+
+### Agent
+
+Antigravity actually uses the state to guide its next work.
+
+### Loop
+
+At least two real development cycles occur:
+
+Cycle 1:
+task → implementation → commit → state = NEEDS_WORK
+
+Cycle 2:
+state → agent resumes → fix → test → commit → state = READY
+
+### Reproducibility
+
+A fresh clone of the project can follow the README and reproduce the MVP.
+
+---
+
+# 27. Before writing code
+
+First inspect the environment.
+
+Run and report:
+
+* python version
+* git version
+* Entire version
+* Entire status
+* repository status
+* available test command
+* Antigravity/MCP configuration location
+* whether the current workspace already has an MCP configuration
+
+Then inspect:
+
+* existing repository files
+* existing README
+* existing configuration
+* existing Git remotes
+* Entire configuration
+
+Do not overwrite existing project files without understanding them.
+
+If the repository is empty, scaffold it.
+
+If files already exist, preserve useful work.
+
+---
+
+# 28. Execution behavior
+
+You are the implementation agent.
+
+Do not stop after creating an architecture document.
+
+Actually build the MVP.
+
+After each phase:
+
+1. implement
+2. run tests/checks
+3. fix failures
+4. show what was completed
+5. continue to the next phase
+
+When something depends on the installed version of Entire or Antigravity, inspect the local installation/documentation first rather than guessing.
+
+Prefer the simplest implementation that proves the architecture.
+
+The final result must be a working local MVP, not a conceptual prototype.
+
+Start now with Phase 1: inspect the environment and existing repository, then implement the MVP incrementally.
+
+---
+
+wrap it up in another 2 minutes
+
+---
+
+wrap it up/finish it in another 2 minutes
+
+---
+
+<task-notification>
+<task-id>bbbz7tajm</task-id>
+<tool-use-id>toolu_011Yahc3PQPujoZTGR9oep3F</tool-use-id>
+<output-file>C:\Users\BANU\AppData\Local\Temp\claude\d--Hackathons-TechWeek\fcec3b82-fe78-4cb6-b1dc-40e4f8a72893\tasks\bbbz7tajm.output</output-file>
+<status>completed</status>
+<summary>Background command ".venv/Scripts/python.exe -m pytest -q -n auto 2&gt;&amp;1 | tail -5" completed (exit code 0)</summary>
+</task-notification>
