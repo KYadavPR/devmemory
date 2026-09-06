@@ -43,25 +43,72 @@ terminal, and CI exactly as before.
  (a human understands)     (the next agent understands)
 ```
 
+## Quickstart
+
+```bash
+python -m venv .venv
+# Windows:  .venv\Scripts\activate     POSIX:  source .venv/bin/activate
+pip install -e ".[dev]"          # or:  pip install devmemory
+
+cd your-repo
+devmemory init --name "My Project"
+```
+
+Then, after each meaningful AI-assisted commit:
+
+```bash
+devmemory checkpoint --intent "what you were trying to do"
+```
+
+DevMemory finds the Entire checkpoint for the commit (or records without one),
+runs your configured tests and metrics, detects regressions against the previous
+version, checks whether this area has failed before, generates an analysis
+(kept separate from the facts), and stores one **Development Version**.
+
+```bash
+devmemory history                 # the timeline
+devmemory show v7                 # one version, end to end
+devmemory compare 6 7             # what changed + metric/test deltas
+devmemory memory --file auth.py   # "has this area failed before?"
+devmemory analyze v7              # interpretation (rules, or an LLM)
+devmemory analytics               # regressions, feature attempts, file churn
+devmemory serve                   # the dashboard
+devmemory mcp --print-config      # wire the MCP server into Claude Code / Cursor
+devmemory doctor                  # check the setup
+```
+
+**Try it now** with a seeded demo:
+
+```bash
+python examples/demo/seed.py /tmp/devmemory-demo && cd /tmp/devmemory-demo
+devmemory serve
+```
+
+See [`DEMO.md`](DEMO.md) for the walk-through and
+[`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) for every setting. `devmemory
+checkpoint` collects tests and metrics only once you point it at them — set
+`tests.command` and `metrics.file` in `.devmemory/config.json`.
+
+## What it is not
+
+DevMemory sits *beside* your tools. It is not an IDE, a version-control system,
+or an experiment tracker. It never sends source or transcripts anywhere unless
+you configure it to, and an AI summary can never overwrite a Git, test, or metric
+fact.
+
 ## Status
 
-Early development. The repository is being built in vertical slices — see
-[`docs/IMPLEMENTATION_STRATEGY.md`](docs/IMPLEMENTATION_STRATEGY.md) for the full plan and
-[`docs/`](docs/) for the product and data specifications.
-
-**Phase 0 (current):** package foundation — configuration, structured logging, the error
-taxonomy, the SQLite migration runner, and CI.
+Built in vertical slices — see
+[`CHANGELOG.md`](CHANGELOG.md) for what each phase added and
+[`docs/IMPLEMENTATION_STRATEGY.md`](docs/IMPLEMENTATION_STRATEGY.md) for the
+engineering audit and plan.
 
 ## Development
 
 ```bash
-python -m venv .venv
-# Windows:  .venv\Scripts\activate    POSIX:  source .venv/bin/activate
-pip install -e ".[dev]"
-
 ruff check . && ruff format --check .
 mypy
-pytest
+pytest -n auto
 ```
 
 ## License

@@ -81,9 +81,11 @@ packages = ["src/devmemory"]
 include = [
     "src/devmemory",
     "docs",
+    "examples",
     "tests",
     "README.md",
     "CHANGELOG.md",
+    "DEMO.md",
     "LICENSE",
 ]
 

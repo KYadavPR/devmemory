@@ -23,6 +23,7 @@ from devmemory.cli.analytics import analytics_command, databricks_app
 from devmemory.cli.analyze import analyze_command
 from devmemory.cli.checkpoint import checkpoint_command
 from devmemory.cli.compare import compare_command, diff_command
+from devmemory.cli.doctor import doctor_command
 from devmemory.cli.history import history_command
 from devmemory.cli.impact import impact_command
 from devmemory.cli.init import init_command
@@ -112,6 +113,7 @@ def version() -> None:
 
 
 app.command(name="init")(handle_errors(init_command))
+app.command(name="doctor")(handle_errors(doctor_command))
 app.command(name="status")(handle_errors(status_command))
 app.command(name="checkpoint")(handle_errors(checkpoint_command))
 app.command(name="history")(handle_errors(history_command))

@@ -6,6 +6,23 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Phase 14: demo, doctor, docs, end-to-end test
+
+- `devmemory doctor` — checks the toolchain (Python, git, `entire`, the `graph`
+  plugin), the project (root, config, schema version), the outbox depth, and
+  which integration credentials are *present* (never their values). `--strict`
+  exits non-zero on any warning.
+- `examples/demo/seed.py` — builds a self-contained demo repo: a small `pricing`
+  package with six Development Versions across three features, two regressions,
+  and a repeated failed approach, so every view and command has real data.
+- `DEMO.md` — a five-minute runbook. `docs/CONFIGURATION.md` — every setting,
+  the secrets-from-env table, and the fact/analysis separation.
+- `README.md` — a real quickstart replacing the Phase 0 placeholder.
+- `tests/test_e2e.py` — one test driving the whole lifecycle through the real
+  CLI and dashboard API: init → success/regression/fix checkpoints → history,
+  show, compare, analyze, memory → `/api/project`, `/api/analytics`,
+  `/api/agent/check`, `doctor`.
+
 ### Added — Phase 13: AI analysis layer
 
 - `devmemory.analysis`: a provider fallback chain that turns one version's
