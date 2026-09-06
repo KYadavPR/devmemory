@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1TMH3N57GNF0SVS7K20PSC1",
+  "strategy": "manual-commit",
+  "branch": "feat/dashboard-redesign",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "DEMO.md",
+    "README.md",
+    "src/devmemory/web/frontend/src/components/charts.tsx",
+    "src/devmemory/web/frontend/src/routes/Features.tsx",
+    "src/devmemory/web/frontend/src/theme/components.css",
+    "src/devmemory/web/frontend/src/theme/theme.css",
+    "tests/test_api.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 90,
+    "cache_creation_tokens": 310368,
+    "cache_read_tokens": 13310792,
+    "output_tokens": 17853,
+    "api_call_count": 45
+  }
+}
