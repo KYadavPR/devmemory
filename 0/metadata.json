@@ -1,0 +1,71 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1V1RSP9XNK6DFHMFBGRFBDX",
+  "session_id": "fcec3b82-fe78-4cb6-b1dc-40e4f8a72893",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-06T09:46:11.1120023Z",
+  "branch": "docs/project-details",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "e7e465c78f12",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 1230,
+    "cache_creation_tokens": 2947671,
+    "cache_read_tokens": 163957041,
+    "output_tokens": 377344,
+    "api_call_count": 616
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01AVhWz5mAnwzPDCfW2D7M6d",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "dataviz"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "1013cc4d85c7",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 469,
+        "end": 470,
+        "entry_ids": [
+          "96114268-5981-46a9-bfe5-b6d5e5c70194"
+        ],
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: dataviz",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 25
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 18,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 18
+      }
+    }
+  ]
+}
