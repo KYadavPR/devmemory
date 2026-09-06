@@ -1,0 +1,132 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1TD5P1PZA5AQMSD08R8X8JH",
+  "session_id": "2b7c09fa-80a5-432d-8af8-c5b91fe6d4b3",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-06T03:46:17.4362985Z",
+  "branch": "fix/databricks-live-sync",
+  "checkpoints_count": 5,
+  "save_step_count": 5,
+  "files_touched": [
+    "src/devmemory/adapters/databricks.py",
+    "src/devmemory/cli/analytics.py",
+    "src/devmemory/services/analytics.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "90e4d4417a5a",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 1814,
+    "cache_creation_tokens": 1809095,
+    "cache_read_tokens": 400439867,
+    "output_tokens": 703151,
+    "api_call_count": 909
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01Cr5tBqJ2ZsqS5PnAN9vVfn",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "claude-api"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "3266fe3223d3",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 3952,
+        "end": 3953,
+        "entry_ids": [
+          "127608e4-0205-4f06-a138-bcb5024efb79"
+        ],
+        "tool_use_id": "toolu_01Cr5tBqJ2ZsqS5PnAN9vVfn"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01Cr5tBqJ2ZsqS5PnAN9vVfn"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: claude-api",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 8
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-06T03:46:15.4217423Z",
+    "agent_lines": 4,
+    "agent_removed": 1,
+    "human_added": 6,
+    "human_modified": 2,
+    "human_removed": 0,
+    "total_committed": 12,
+    "total_lines_changed": 13,
+    "agent_percentage": 38.46153846153847,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 2,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".env.example": 2
+      },
+      "user_removed_per_file": {
+        ".env.example": 2
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 2,
+      "user_lines_removed": 2,
+      "agent_lines_added": 2,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".env.example": 2
+      },
+      "user_removed_per_file": {
+        ".env.example": 2
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 8,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "src/devmemory/adapters/databricks.py": 4,
+        "src/devmemory/cli/analytics.py": 4
+      },
+      "user_removed_per_file": {
+        "src/devmemory/adapters/databricks.py": 1,
+        "src/devmemory/cli/analytics.py": 1
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 14,
+      "agent_lines_removed": 3
+    }
+  ]
+}

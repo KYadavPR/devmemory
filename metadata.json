@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1TD5P1PZA5AQMSD08R8X8JH",
+  "strategy": "manual-commit",
+  "branch": "fix/databricks-live-sync",
+  "checkpoints_count": 5,
+  "files_touched": [
+    "src/devmemory/adapters/databricks.py",
+    "src/devmemory/cli/analytics.py",
+    "src/devmemory/services/analytics.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1814,
+    "cache_creation_tokens": 1809095,
+    "cache_read_tokens": 400439867,
+    "output_tokens": 703151,
+    "api_call_count": 909
+  }
+}
