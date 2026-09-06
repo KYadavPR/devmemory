@@ -144,4 +144,18 @@ def test_dashboard_index_served(client: TestClient) -> None:
     assert "DevMemory" in r.text
     # the built Vite bundle: index.html links a hashed JS + CSS asset under /static/
     assert "/static/assets/" in r.text
+    assert "no-cache" in r.headers.get("cache-control", "")
     assert client.get("/static/index.html").status_code == 200
+
+
+def test_project_brief_roundtrip(client: TestClient) -> None:
+    assert client.get("/api/project/brief").json() == {"content": "", "updated_at": None}
+
+    saved = client.put(
+        "/api/project/brief",
+        json={"content": "# Demo\n- money in cents\n- never break login()\n"},
+    ).json()
+    assert "money in cents" in saved["content"]
+    assert saved["updated_at"]
+
+    assert client.get("/api/project/brief").json()["content"] == saved["content"]

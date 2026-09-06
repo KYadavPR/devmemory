@@ -24,6 +24,8 @@ from devmemory.api.schemas import (
     ComparisonResponse,
     FeatureDetail,
     IssueRequest,
+    ProjectBriefDoc,
+    ProjectBriefRequest,
     ProjectSummary,
     RequirementUpdateRequest,
     SearchResponse,
@@ -41,6 +43,7 @@ from devmemory.domain.models import (
     EntireStatus,
 )
 from devmemory.domain.taskloop import NormalizedState
+from devmemory.services import brief as briefsvc
 from devmemory.services import taskloop
 from devmemory.services.agent_context import (
     ChangeGuidance,
@@ -139,6 +142,16 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
     @app.get("/api/status", response_model=ProjectSummary)
     def project(ctx: Ctx) -> ProjectSummary:
         return mappers.project_summary(project_status(ctx, entire_probe=probe_cache.get(ctx)))
+
+    @app.get("/api/project/brief", response_model=ProjectBriefDoc)
+    def get_project_brief(ctx: Ctx) -> ProjectBriefDoc:
+        doc = briefsvc.get_brief(ctx)
+        return ProjectBriefDoc(content=doc.content, updated_at=doc.updated_at)
+
+    @app.put("/api/project/brief", response_model=ProjectBriefDoc)
+    def put_project_brief(ctx: Ctx, body: ProjectBriefRequest) -> ProjectBriefDoc:
+        doc = briefsvc.set_brief(ctx, body.content)
+        return ProjectBriefDoc(content=doc.content, updated_at=doc.updated_at)
 
     # -- versions ------------------------------------------------------
 

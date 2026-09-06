@@ -30,6 +30,7 @@ from devmemory.domain.taskloop import (
     TaskTestRun,
 )
 from devmemory.logging import get_logger
+from devmemory.services.brief import brief_context
 from devmemory.services.context import ProjectContext
 from devmemory.services.taskloop import collectors
 from devmemory.services.taskloop.requirements import (
@@ -74,7 +75,7 @@ def create_task(
     branch = ctx.git.current_branch() or "main"
     cmd = test_command or ctx.config.tests.command
 
-    requirements = normalize_requirements(goal, ctx)
+    requirements = normalize_requirements(goal, ctx, brief=brief_context(ctx))
     task = Task(
         id=tid,
         goal=goal,

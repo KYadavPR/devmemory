@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -53,6 +53,67 @@ export function TaskDetail() {
     addIssue.isPending ||
     dropIssue.isPending;
 
+  // --- auto-loop: keep refreshing and suggesting the next prompt -----------
+  const LOOP_MS = 9000;
+  const isTerminal = (st?: string) => st === "READY" || st === "BLOCKED";
+  const [auto, setAuto] = useState(() => {
+    try {
+      return localStorage.getItem(`loop-auto:${id}`) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [guardTrip, setGuardTrip] = useState<string | null>(null);
+  const prevFindings = useRef<number | null>(null);
+  const worseStreak = useRef(0);
+
+  const setMode = (on: boolean) => {
+    setAuto(on);
+    setGuardTrip(null);
+    worseStreak.current = 0;
+    try {
+      localStorage.setItem(`loop-auto:${id}`, on ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const status = state.data?.overall_status;
+  const findingsCount = state.data?.findings.length ?? 0;
+
+  // Direction guard: two consecutive refreshes with more findings => stop.
+  useEffect(() => {
+    if (!state.data) return;
+    const prev = prevFindings.current;
+    if (prev != null && findingsCount > prev) {
+      worseStreak.current += 1;
+      if (worseStreak.current >= 2 && auto) {
+        setMode(false);
+        setGuardTrip(
+          "Findings grew on two refreshes in a row — auto-loop paused. Check the direction before resuming.",
+        );
+      }
+    } else if (prev != null) {
+      worseStreak.current = 0;
+    }
+    prevFindings.current = findingsCount;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.dataUpdatedAt]);
+
+  // The loop.
+  useEffect(() => {
+    if (!auto || !id || !status) return;
+    if (isTerminal(status)) {
+      setMode(false);
+      return;
+    }
+    const t = setInterval(() => {
+      if (!refresh.isPending && !complete.isPending) refresh.mutate();
+    }, LOOP_MS);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto, id, status, refresh.isPending, complete.isPending]);
+
   return (
     <Async query={state}>
       {(s) => (
@@ -67,6 +128,14 @@ export function TaskDetail() {
             subtitle={s.task.goal}
             actions={
               <>
+                <button
+                  className={`btn${auto ? " btn--primary" : ""}`}
+                  onClick={() => setMode(!auto)}
+                  title="Auto: re-run refresh on an interval and keep the loop prompt current. Stops on READY / BLOCKED or if findings regress."
+                >
+                  <Icon name={auto ? "refresh" : "target"} size={14} />
+                  Auto-loop {auto ? "on" : "off"}
+                </button>
                 <button className="btn" disabled={busy} onClick={() => refresh.mutate()}>
                   {refresh.isPending ? <span className="spinner" /> : <Icon name="refresh" size={14} />}
                   Refresh
@@ -85,6 +154,8 @@ export function TaskDetail() {
           />
 
           <StatusBanner s={s} />
+
+          <LoopPrompt s={s} auto={auto} guardTrip={guardTrip} refreshing={refresh.isPending} />
 
           <div className="grid grid--4" style={{ marginTop: 4 }}>
             <StatTile
@@ -226,6 +297,94 @@ export function TaskDetail() {
         </>
       )}
     </Async>
+  );
+}
+
+function buildLoopPrompt(s: NormalizedState): string {
+  const lines: string[] = [
+    `Continue task ${s.task.id}: ${s.task.goal}`,
+    `State right now: ${s.overall_status}.`,
+  ];
+  if (s.recommended_focus.length) {
+    lines.push("", "Do next:");
+    s.recommended_focus.forEach((f) => lines.push(`- ${f}`));
+  }
+  const open = s.requirements.filter((r) => r.status !== "COMPLETE");
+  if (open.length) {
+    lines.push("", "Requirements not yet met:");
+    open.forEach((r) => lines.push(`- ${r.id}: ${r.description}${r.reason ? ` (${r.reason})` : ""}`));
+  }
+  if (s.findings.length) {
+    lines.push("", "Findings from the last state refresh:");
+    s.findings.forEach((f) => lines.push(`- ${f}`));
+  }
+  lines.push("", "When done: commit with a clear message, then the loop re-checks.");
+  return lines.join("\n");
+}
+
+function LoopPrompt({
+  s,
+  auto,
+  guardTrip,
+  refreshing,
+}: {
+  s: NormalizedState;
+  auto: boolean;
+  guardTrip: string | null;
+  refreshing: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const terminal = s.overall_status === "READY" || s.overall_status === "BLOCKED";
+  const prompt = buildLoopPrompt(s);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked */
+    }
+  };
+
+  return (
+    <Card
+      title="Loop prompt"
+      action={
+        <Badge tone={auto ? "ok" : "neutral"}>
+          {auto ? (refreshing ? "auto · refreshing" : "auto") : "manual"}
+        </Badge>
+      }
+      pad
+      style={{ marginBottom: 16 }}
+    >
+      {guardTrip && (
+        <p className="callout callout--warn" style={{ padding: "8px 10px", marginTop: 0 }}>
+          <Icon name="alert" size={13} /> {guardTrip}
+        </p>
+      )}
+      {terminal ? (
+        <p className="muted text-sm" style={{ margin: 0 }}>
+          {s.overall_status === "READY"
+            ? "Task is READY — nothing to send back."
+            : "Task is BLOCKED — a human decision is needed before the loop continues."}
+        </p>
+      ) : (
+        <>
+          <pre className="loop-prompt">{prompt}</pre>
+          <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            <button className="btn" onClick={copy}>
+              <Icon name="copy" size={14} /> {copied ? "Copied" : "Copy for IDE"}
+            </button>
+            {auto && (
+              <span className="text-xs muted">
+                auto-refreshing every 9s — stops on READY / BLOCKED, or if findings regress
+              </span>
+            )}
+          </div>
+        </>
+      )}
+    </Card>
   );
 }
 

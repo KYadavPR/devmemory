@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTasks, useProject, createTask } from "@/api/client";
+import {
+  useTasks,
+  useProject,
+  useProjectBrief,
+  createTask,
+  saveProjectBrief,
+} from "@/api/client";
 import { Async } from "@/components/Async";
 import { Badge, Card, PageHead, EmptyState } from "@/components/primitives";
 import { Icon } from "@/components/Icon";
@@ -33,7 +39,9 @@ export function Tasks() {
         subtitle="The state-aware coding loop — one normalized state per task, refreshed from Git, Entire, tests, and change-impact."
       />
 
-      <Card title="New task" pad>
+      <ProjectBriefCard />
+
+      <Card title="New task" pad style={{ marginTop: 16 }}>
         <label className="field-label">Goal</label>
         <input
           className="input"
@@ -104,5 +112,90 @@ export function Tasks() {
         </Async>
       </div>
     </>
+  );
+}
+
+function ProjectBriefCard() {
+  const brief = useProjectBrief();
+  const qc = useQueryClient();
+  const [text, setText] = useState("");
+  const [dirty, setDirty] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (brief.data && !dirty) setText(brief.data.content);
+  }, [brief.data, dirty]);
+
+  const save = useMutation({
+    mutationFn: () => saveProjectBrief(text),
+    onSuccess: (doc) => {
+      qc.setQueryData(["project-brief"], doc);
+      setDirty(false);
+    },
+  });
+
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    const content = await file.text();
+    setText((prev) => (prev.trim() ? `${prev.trim()}\n\n${content}` : content));
+    setDirty(true);
+  };
+
+  return (
+    <Card
+      title="Project context"
+      action={
+        <span className="muted text-xs">
+          single source of truth ·{" "}
+          {brief.data?.updated_at ? `saved ${relativeTime(brief.data.updated_at)}` : "not set"}
+        </span>
+      }
+      pad
+    >
+      <p className="muted text-sm" style={{ marginTop: 0 }}>
+        Specs, constraints, decisions, conventions — anything the loop should treat as ground
+        truth. Fed into requirement normalization and the prompts suggested back to your IDE.
+      </p>
+      <textarea
+        className="input"
+        rows={6}
+        placeholder="# What this project is&#10;- …&#10;## Constraints&#10;- …&#10;## Conventions&#10;- …"
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          setDirty(true);
+        }}
+        style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", resize: "vertical" }}
+      />
+      <div className="row" style={{ gap: 8, marginTop: 12 }}>
+        <button
+          className="btn btn--primary"
+          disabled={!dirty || save.isPending}
+          onClick={() => save.mutate()}
+        >
+          {save.isPending ? <span className="spinner" /> : <Icon name="check" size={14} />}
+          Save
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".md,.txt,.markdown,text/plain,text/markdown"
+          hidden
+          onChange={(e) => {
+            void onFile(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+        <button className="btn" onClick={() => fileRef.current?.click()}>
+          <Icon name="plus" size={14} /> Append file
+        </button>
+        {dirty && <span className="text-xs muted">unsaved changes</span>}
+        {save.isError && (
+          <span className="text-xs" style={{ color: "var(--bad)" }}>
+            {(save.error as Error).message}
+          </span>
+        )}
+      </div>
+    </Card>
   );
 }

@@ -15,6 +15,7 @@ import type {
   NormalizedState,
   TaskSummary,
   SnapshotSummary,
+  ProjectBriefDoc,
 } from "./types";
 
 const BASE = "/api";
@@ -155,6 +156,25 @@ export const useSearch = (q: string) =>
 
 export const checkChange = (files: string[], intent: string, feature?: string) =>
   apiPost<ChangeGuidance>("/agent/check", { files, intent: intent || null, feature: feature || null });
+
+// --- project brief (single source of truth) --------------------------------
+
+export const useProjectBrief = (opts?: QOpts<ProjectBriefDoc>) =>
+  useQuery({
+    queryKey: ["project-brief"],
+    queryFn: () => apiGet<ProjectBriefDoc>("/project/brief"),
+    ...opts,
+  });
+
+export const saveProjectBrief = async (content: string): Promise<ProjectBriefDoc> => {
+  const res = await fetch(`${BASE}/project/brief`, {
+    method: "PUT",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new ApiError(res.status, (await res.text()) || res.statusText);
+  return res.json() as Promise<ProjectBriefDoc>;
+};
 
 // --- state-aware coding loop ------------------------------------------------
 

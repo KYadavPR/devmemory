@@ -515,3 +515,8 @@ export interface SnapshotSummary {
   requirements_complete: number;
   created_at: string | null;
 }
+
+export interface ProjectBriefDoc {
+  content: string;
+  updated_at: string | null;
+}

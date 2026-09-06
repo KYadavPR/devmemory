@@ -53,11 +53,21 @@ _EVAL_SYSTEM = (
 # --- normalization --------------------------------------------------------
 
 
-def normalize_requirements(goal: str, ctx: ProjectContext) -> list[Requirement]:
-    """Turn the human goal into R1..Rn. LLM when a key is configured, else rules."""
+def normalize_requirements(
+    goal: str, ctx: ProjectContext, *, brief: str | None = None
+) -> list[Requirement]:
+    """Turn the human goal into R1..Rn. LLM when a key is configured, else rules.
+
+    ``brief`` is the project's single source of truth (see
+    :mod:`devmemory.services.brief`); when present it is given to the LLM as
+    context so requirements reflect the project's constraints and conventions.
+    """
     providers = ctx.config.analysis.providers
+    prompt = f"TASK:\n{goal.strip()}"
+    if brief:
+        prompt = f"PROJECT BRIEF (source of truth):\n{brief.strip()}\n\n{prompt}"
     text = call_llm(
-        f"TASK:\n{goal.strip()}",
+        prompt,
         system=_NORMALIZE_SYSTEM,
         providers=providers,
         model=ctx.config.analysis.model,

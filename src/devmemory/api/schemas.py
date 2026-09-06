@@ -170,6 +170,17 @@ class SnapshotSummary(BaseModel):
     created_at: str | None
 
 
+class ProjectBriefDoc(BaseModel):
+    """The project's single source of truth: one editable markdown document."""
+
+    content: str
+    updated_at: str | None
+
+
+class ProjectBriefRequest(BaseModel):
+    content: str
+
+
 __all__ = [
     "AgentCheckRequest",
     "ComparisonResponse",
@@ -177,6 +188,8 @@ __all__ = [
     "FeatureHistoryPoint",
     "IssueRequest",
     "MetricChange",
+    "ProjectBriefDoc",
+    "ProjectBriefRequest",
     "ProjectSummary",
     "RequirementUpdateRequest",
     "SearchHit",
