@@ -22,7 +22,7 @@
   --border-strong: #dcd7cc;
   /* inner dividers inside a bordered surface — one step lighter than --border */
   --border-hairline: #f0ece3;
-  --border-accent: #c9c5f0;
+  --border-accent: #c0d3e8;
 
   --text: #1b1a17;
   --text-strong: #2c2924;
@@ -32,12 +32,14 @@
   --text-on-accent: #ffffff;
 
   /* -- brand + semantic ------------------------------------------------- */
-  --accent: #4b41d1;
-  --accent-hover: #3f37c9;
-  --accent-press: #362fb0;
-  --accent-soft: #eeedfd;
-  --accent-border: #c9c5f0;
-  --accent-text: #4b41d1;
+  /* Ink blue — printer's ink on cream stock. Clearly apart from the green /
+     amber / red state colours, and readable for every kind of colour vision. */
+  --accent: #1b4d89;
+  --accent-hover: #163f70;
+  --accent-press: #123259;
+  --accent-soft: #e9eff7;
+  --accent-border: #c0d3e8;
+  --accent-text: #1b4d89;
 
   --ok: #0e6b4d;
   --ok-soft: #e4f2ea;
@@ -56,18 +58,20 @@
   /* the faint row tint behind a regression in a dense list */
   --bad-wash: #fcf1f1;
 
-  --info: #0a5bb0;
-  --info-soft: #e7f1fd;
-  --info-border: #bcdafb;
-  --info-strong: #0a5bb0;
+  /* Informational states sit back as slate so they never compete with the
+     accent (now blue itself) or read as a success/failure. */
+  --info: #3f5a73;
+  --info-soft: #edf1f5;
+  --info-border: #cdd8e2;
+  --info-strong: #344c62;
 
   /* -- data-viz series (color-blind-tuned; see charts) ----------------- */
-  --series-1: #4b41d1;
+  --series-1: #1b4d89;
   --series-2: #0e8a8a;
   --series-3: #b5701a;
   --series-4: #a8356b;
   --series-5: #5b7a26;
-  --series-6: #7551bd;
+  --series-6: #4a5b6e;
 
   /* -- radius / elevation / motion ------------------------------------- */
   --r-1: 6px;
@@ -113,7 +117,7 @@
   --border: #2a2822;
   --border-strong: #3a382f;
   --border-hairline: #23211b;
-  --border-accent: #3b3670;
+  --border-accent: #27466b;
 
   --text: #ecebe5;
   --text-strong: #f4f3ee;
@@ -122,12 +126,12 @@
   --text-faint: #635f53;
   --text-on-accent: #ffffff;
 
-  --accent: #8b83f7;
-  --accent-hover: #9a93f9;
-  --accent-press: #7a70f0;
-  --accent-soft: #211f3d;
-  --accent-border: #3b3670;
-  --accent-text: #a9a2fb;
+  --accent: #7fb3f0;
+  --accent-hover: #93c0f4;
+  --accent-press: #6aa3e6;
+  --accent-soft: #13253a;
+  --accent-border: #27466b;
+  --accent-text: #9cc6f5;
 
   --ok: #4cbf90;
   --ok-soft: #0e2a20;
@@ -145,17 +149,17 @@
   --bad-strong: #f5807f;
   --bad-wash: #241315;
 
-  --info: #4a9eff;
-  --info-soft: #0c2137;
-  --info-border: #1c3a5c;
-  --info-strong: #6bb0ff;
+  --info: #8fa9c0;
+  --info-soft: #17212b;
+  --info-border: #2b3a4a;
+  --info-strong: #a8bed2;
 
-  --series-1: #8b83f7;
+  --series-1: #7fb3f0;
   --series-2: #35c0bf;
   --series-3: #f0a44e;
   --series-4: #e46aa0;
   --series-5: #9dc256;
-  --series-6: #b18df0;
+  --series-6: #8fa3b8;
 
   --shadow-xs: none;
   --shadow-sm: none;

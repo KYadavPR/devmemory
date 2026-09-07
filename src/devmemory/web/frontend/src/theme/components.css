@@ -112,7 +112,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(28, 24, 16, 0.38);
     animation: routeFade var(--dur-2) var(--ease);
   }
 }
@@ -186,7 +186,7 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(10, 11, 16, 0.4);
+  background: rgba(28, 24, 16, 0.42);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: flex-start;
