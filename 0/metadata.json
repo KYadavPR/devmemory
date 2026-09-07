@@ -1,0 +1,177 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1Y4WZH35GS54M9DRXQFSQ5S",
+  "session_id": "fcec3b82-fe78-4cb6-b1dc-40e4f8a72893",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-07T14:38:38.9405455Z",
+  "branch": "docs/project-details",
+  "checkpoints_count": 4,
+  "save_step_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "15025fd0a3b8",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 1834,
+    "cache_creation_tokens": 4258813,
+    "cache_read_tokens": 291880707,
+    "output_tokens": 574282,
+    "api_call_count": 919
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01AVhWz5mAnwzPDCfW2D7M6d",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "dataviz"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "1013cc4d85c7",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 469,
+        "end": 470,
+        "entry_ids": [
+          "96114268-5981-46a9-bfe5-b6d5e5c70194"
+        ],
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: dataviz",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-design-2026-09-07T09:50:48.4735238Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "design"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "52c2400bd0bc",
+      "timestamp": "2026-09-07T09:50:48.4735238Z",
+      "native": {
+        "command": "/design"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/design",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-compact-2026-09-07T10:11:22.9045012Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "compact"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "0ec552b57b72",
+      "timestamp": "2026-09-07T10:11:22.9045012Z",
+      "native": {
+        "command": "/compact"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/compact",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_013Yh3odHuQsyEzUh2aVbDpM",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "design"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "15025fd0a3b8",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 4845,
+        "end": 4846,
+        "entry_ids": [
+          "59c3efa4-3b88-4da3-a4e0-42fe614858e3"
+        ],
+        "tool_use_id": "toolu_013Yh3odHuQsyEzUh2aVbDpM"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_013Yh3odHuQsyEzUh2aVbDpM"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: design",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_013kMDDu8ZsCRqK5XAYpFpyh",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "artifact-capabilities"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "15025fd0a3b8",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 4929,
+        "end": 4930,
+        "entry_ids": [
+          "be0cb0d7-6d7c-4e88-ac19-9fdc66748666"
+        ],
+        "tool_use_id": "toolu_013kMDDu8ZsCRqK5XAYpFpyh"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_013kMDDu8ZsCRqK5XAYpFpyh"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: artifact-capabilities",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 53
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 18,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 18
+      }
+    }
+  ]
+}
