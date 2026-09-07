@@ -1,0 +1,97 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1XMGEK0HCJWH39XD31N29QF",
+  "session_id": "fcec3b82-fe78-4cb6-b1dc-40e4f8a72893",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-07T09:52:10.6191634Z",
+  "branch": "docs/project-details",
+  "checkpoints_count": 2,
+  "save_step_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "52c2400bd0bc",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 1636,
+    "cache_creation_tokens": 3547271,
+    "cache_read_tokens": 238199388,
+    "output_tokens": 487215,
+    "api_call_count": 819
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01AVhWz5mAnwzPDCfW2D7M6d",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "dataviz"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "1013cc4d85c7",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 469,
+        "end": 470,
+        "entry_ids": [
+          "96114268-5981-46a9-bfe5-b6d5e5c70194"
+        ],
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: dataviz",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-design-2026-09-07T09:50:48.4735238Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "design"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "52c2400bd0bc",
+      "timestamp": "2026-09-07T09:50:48.4735238Z",
+      "native": {
+        "command": "/design"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/design",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 49
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 19,
+      "user_lines_removed": 1,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 18,
+        "src/devmemory/__about__.py": 1
+      },
+      "user_removed_per_file": {
+        "src/devmemory/__about__.py": 1
+      }
+    }
+  ]
+}
