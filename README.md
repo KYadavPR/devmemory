@@ -46,13 +46,16 @@ terminal, and CI exactly as before.
 ## Quickstart
 
 ```bash
-python -m venv .venv
-# Windows:  .venv\Scripts\activate     POSIX:  source .venv/bin/activate
-pip install -e ".[dev]"          # or:  pip install devmemory
+pip install devmemory-cli
 
 cd your-repo
 devmemory init --name "My Project"
+devmemory serve
 ```
+
+Nothing else to configure: `init` creates `.devmemory/` in your repo, and the
+dashboard reads that project and nothing else. There is no sample data — what you
+see is your own history.
 
 `init` backfills a lightweight Development Version for each of the last 100 commits,
 so an existing project has a populated timeline from the start (`--no-backfill` to
@@ -82,15 +85,7 @@ devmemory mcp --print-config      # wire the MCP server into Claude Code / Curso
 devmemory doctor                  # check the setup
 ```
 
-**Try it now** with a seeded demo:
-
-```bash
-python examples/demo/seed.py /tmp/devmemory-demo && cd /tmp/devmemory-demo
-devmemory serve
-```
-
-See [`DEMO.md`](DEMO.md) for the walk-through and
-[`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) for every setting. `devmemory
+See [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) for every setting. `devmemory
 checkpoint` collects tests and metrics only once you point it at them — set
 `tests.command` and `metrics.file` in `.devmemory/config.json`.
 

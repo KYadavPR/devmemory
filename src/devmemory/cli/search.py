@@ -14,7 +14,7 @@ from devmemory.services.versions import search_versions
 
 def search_command(
     query: Annotated[
-        str, typer.Argument(help="Query: authentication, model.py, Codex, learning rate…")
+        str, typer.Argument(help="Query: an intent, a feature, a file path, or an agent name")
     ],
     limit: Annotated[int, typer.Option("--limit", "-n")] = 25,
     as_json: Annotated[bool, typer.Option("--json")] = False,

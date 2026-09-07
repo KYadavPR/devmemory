@@ -13,18 +13,16 @@ human task → normalize into requirements → agent inspects repo → edits cod
 
 ## Try it
 
-Any DevMemory project works. Seed the demo, then drive the loop:
+Any DevMemory project works. From a repo you have run `devmemory init` in:
 
 ```bash
-python examples/demo/seed.py /tmp/devmemory-demo && cd /tmp/devmemory-demo
-
-devmemory task new "Add a currency helper to pricing/ and a test for it" \
+devmemory task new "Add a currency helper and a test for it" \
     --test "python -m pytest -q"
 devmemory task state                 # the dashboard: NEEDS_WORK, requirements 0/2
 
-# ... agent inspects the repo, implements pricing/currency.py + a test, commits ...
+# ... agent inspects the repo, implements the helper + a test, commits ...
 
-devmemory task requirement R1 -s complete -m "added pricing/currency.py"
+devmemory task requirement R1 -s complete -m "added the currency helper"
 devmemory task refresh               # re-collects evidence; R2 (tests) verified
 devmemory task state                 # READY
 devmemory task history               # snapshot #1 NEEDS_WORK → #2 READY

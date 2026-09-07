@@ -33,7 +33,7 @@ export function Search() {
         <Icon name="search" size={15} />
         <input
           className="input"
-          placeholder="authentication · learning rate · core.py · Codex …"
+          placeholder="An intent, a feature, a file path, an agent…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           autoFocus

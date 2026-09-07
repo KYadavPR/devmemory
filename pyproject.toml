@@ -86,11 +86,9 @@ exclude = ["src/devmemory/web/frontend"]
 include = [
     "src/devmemory",
     "docs",
-    "examples",
     "tests",
     "README.md",
     "CHANGELOG.md",
-    "DEMO.md",
     "LICENSE",
 ]
 exclude = [
@@ -102,7 +100,7 @@ exclude = [
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
-extend-exclude = ["docs", "examples", "src/devmemory/web/frontend"]
+extend-exclude = ["docs", "src/devmemory/web/frontend"]
 
 [tool.ruff.lint]
 select = [

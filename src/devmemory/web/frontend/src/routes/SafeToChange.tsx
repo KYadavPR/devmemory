@@ -24,6 +24,11 @@ export function SafeToChange() {
   });
 
   const churn = analytics.data?.file_churn ?? [];
+  // Hint with this project's own hot files rather than invented ones.
+  const filesHint = churn.length
+    ? churn.slice(0, 2).map((c) => c.path).join("\n")
+    : "one path per line";
+  const symbolsHint = churn.length ? `a_function, ${churn[0].path}:42` : "a_function, path/to/file.py:42";
 
   return (
     <>
@@ -38,7 +43,7 @@ export function SafeToChange() {
           <textarea
             className="input"
             rows={4}
-            placeholder={"pricing/core.py\nsrc/auth/tokens.py"}
+            placeholder={filesHint}
             value={files}
             onChange={(e) => setFiles(e.target.value)}
             style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem", resize: "vertical" }}
@@ -66,7 +71,7 @@ export function SafeToChange() {
           </label>
           <input
             className="input"
-            placeholder="e.g. change the discount tier logic"
+            placeholder="e.g. what you're about to change, in one line"
             value={intent}
             onChange={(e) => setIntent(e.target.value)}
           />
@@ -76,7 +81,7 @@ export function SafeToChange() {
           </label>
           <input
             className="input"
-            placeholder="apply_discount, pricing/core.py:8"
+            placeholder={symbolsHint}
             value={symbols}
             onChange={(e) => setSymbols(e.target.value)}
             style={{ fontFamily: "var(--font-mono)", fontSize: "0.8125rem" }}

@@ -35,7 +35,7 @@ export function Memory() {
         <Icon name="search" size={15} />
         <input
           className="input"
-          placeholder="Scope by intent — token expiry, discount logic, learning rate…"
+          placeholder="Scope by intent — what are you about to try?"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           autoFocus

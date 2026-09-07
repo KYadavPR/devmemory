@@ -215,7 +215,6 @@ devmemory/
 ├── pyproject.toml                  # build, deps, lint, test config
 ├── README.md
 ├── CHANGELOG.md
-├── DEMO.md
 ├── AGENTS.md                       # agent operating protocol
 ├── LICENSE
 │
@@ -602,8 +601,7 @@ pytest -n auto
 # Tests with coverage
 pytest --cov=devmemory --cov-report=term-missing
 
-# Demo
-python examples/demo/seed.py /tmp/devmemory-demo && cd /tmp/devmemory-demo
+# Dashboard against this repo's own history
 devmemory serve
 
 # Health check

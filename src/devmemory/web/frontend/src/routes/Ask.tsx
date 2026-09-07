@@ -1,22 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useGenieStatus, askGenie } from "@/api/client";
+import { useGenieStatus, askGenie, useAnalytics, useVersions } from "@/api/client";
 import { Card, PageHead, EmptyState } from "@/components/primitives";
 import { Icon } from "@/components/Icon";
 import { m, AnimatePresence, useReducedMotion, spring, ThinkingDots } from "@/lib/motion";
-import type { GenieAnswer } from "@/api/types";
+import type { GenieAnswer, AnalyticsSummary, VersionListItem } from "@/api/types";
 
 type Turn =
   | { role: "user"; text: string }
   | { role: "genie"; answer: GenieAnswer }
   | { role: "error"; text: string };
 
-const SUGGESTIONS = [
-  "Which features regressed the most?",
-  "Show every version that failed tests, newest first",
-  "What files change together most often?",
-  "How did quote_latency_ms move over time?",
-];
+/**
+ * Openers drawn from this project's own history — a real feature, a real file, a
+ * real metric name — so the first click asks something that actually has an
+ * answer here. Falls back to shape-only questions on an empty project.
+ */
+function suggestions(a: AnalyticsSummary | undefined, versions: VersionListItem[]): string[] {
+  const out = ["Which features regressed the most?", "Show every version that failed tests, newest first"];
+  const feature = a?.features.find((f) => f.regressions > 0)?.feature ?? a?.features[0]?.feature;
+  if (feature) out.push(`What happened in ${feature}?`);
+  const file = a?.file_churn[0]?.path;
+  if (file) out.push(`Which versions touched ${file}?`);
+  else out.push("What files change together most often?");
+  const metric = versions.find((v) => Object.keys(v.metrics ?? {}).length)?.metrics;
+  const name = metric ? Object.keys(metric)[0] : null;
+  if (name) out.push(`How did ${name} move over time?`);
+  return out.slice(0, 4);
+}
 
 function errorDetail(message: string): string {
   try {
@@ -31,6 +42,9 @@ function errorDetail(message: string): string {
 export function Ask() {
   const reduce = useReducedMotion();
   const status = useGenieStatus();
+  const analytics = useAnalytics();
+  const versions = useVersions(200);
+  const openers = suggestions(analytics.data, versions.data ?? []);
   const mode = status.data?.mode ?? "none";
   const engineLabel = mode === "genie" ? "Genie" : "Ask";
   const subtitle =
@@ -137,7 +151,7 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
                   </p>
                 )}
                 <div className="chat__suggest">
-                  {SUGGESTIONS.map((s) => (
+                  {openers.map((s) => (
                     <button key={s} className="chip" onClick={() => send(s)}>
                       {s}
                     </button>
