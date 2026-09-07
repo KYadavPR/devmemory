@@ -8,7 +8,7 @@ import {
   useVersionImpact,
 } from "@/api/client";
 import { Async } from "@/components/Async";
-import { Card, PageHead, StatusBadge, Badge, Sha, Skeleton } from "@/components/primitives";
+import { Card, StatusBadge, Badge, Sha, Skeleton } from "@/components/primitives";
 import { DiffView } from "@/components/DiffView";
 import { AttemptCard } from "@/components/AttemptCard";
 import { Icon } from "@/components/Icon";
@@ -59,20 +59,29 @@ export function VersionDetail() {
           v.regressions.length > 0;
         return (
           <>
-            <PageHead
-              title={
-                <span className="row" style={{ gap: 10 }}>
-                  {vlabel(v.version_id)}
+            <div className="page-head__row" style={{ alignItems: "flex-start" }}>
+              <div style={{ minWidth: 0 }}>
+                <div className="crumb">
+                  <Link to="/timeline">Timeline</Link> / <span className="mono">{v.version_id}</span>
+                </div>
+                <div className="row" style={{ gap: 10 }}>
+                  <span className="mono" style={{ fontSize: "1.05rem", fontWeight: 600 }}>
+                    {vlabel(v.version_id)}
+                  </span>
                   <StatusBadge status={v.status} />
-                </span>
-              }
-              subtitle={v.intent ?? "No recorded intent"}
-              actions={
-                <Link className="btn btn--sm" to={`/compare/${v.version_id}...${v.version_id}`}>
-                  <Icon name="compare" size={14} /> Compare
-                </Link>
-              }
-            />
+                </div>
+                <div className="h-doc" style={{ marginTop: 9 }}>
+                  {v.intent ?? "No recorded intent"}
+                </div>
+              </div>
+              <Link className="btn btn--sm" to={`/compare/${v.version_id}...${v.version_id}`}>
+                <Icon name="compare" size={14} /> Compare
+              </Link>
+            </div>
+
+            <p className="lead lead--sm secondary" style={{ margin: "12px 0 0" }}>
+              <VersionLead v={v} attempts={attempts.data?.length ?? 0} />
+            </p>
 
             <nav className="subnav">
               {SECTIONS.filter(([s]) => (s === "risk" ? hasRisk : s === "diff" ? diff.data : true)).map(
@@ -96,9 +105,12 @@ export function VersionDetail() {
               )}
             </nav>
 
-            <section id="trace" className="stack scroll-mt">
-              <div className="grid grid--2" style={{ alignItems: "start" }}>
-                <Card title="Development trace" pad>
+            <section id="trace" className="scroll-mt" style={{ marginTop: 24 }}>
+              <div className="split" style={{ ["--rail-w" as string]: "300px" }}>
+                <div>
+                  <div className="h-section" style={{ marginBottom: 14 }}>
+                    Development trace
+                  </div>
                   <Async query={trace} skeleton={<Skeleton h={200} />}>
                     {(t) => (
                       <div className="trace">
@@ -108,9 +120,9 @@ export function VersionDetail() {
                       </div>
                     )}
                   </Async>
-                </Card>
+                </div>
 
-                <div className="stack">
+                <div className="rail">
                   <RecordCard v={v} />
                   {v.primary_checkpoint && <CheckpointCard cp={v.primary_checkpoint} />}
                   {v.metrics.length > 0 && (
@@ -140,108 +152,115 @@ export function VersionDetail() {
               </div>
             </section>
 
-            <section id="changes" className="stack scroll-mt" style={{ marginTop: 20 }}>
-              <Card
-                title={`Files changed · ${v.files_changed}`}
-                action={
-                  <span className="mono text-xs">
-                    <span className="plus">+{v.lines_added}</span>{" "}
-                    <span className="minus">−{v.lines_removed}</span>
-                  </span>
-                }
-                pad
-              >
-                {v.changed_files.length === 0 ? (
-                  <div className="muted">No file changes recorded.</div>
-                ) : (
-                  <div className="files">
-                    {v.changed_files.map((f) => (
-                      <div key={f.path} className="files__row">
-                        <span className={`files__mark files__mark--${f.change_type}`}>
-                          {f.change_type[0].toUpperCase()}
+            <hr className="sep" />
+
+            <section id="changes" className="scroll-mt">
+              <div className="section-head">
+                <div className="h-section">Files changed · {v.files_changed}</div>
+                <span className="mono text-xs">
+                  <span className="plus">+{v.lines_added}</span>{" "}
+                  <span className="minus">−{v.lines_removed}</span>
+                </span>
+              </div>
+              {v.changed_files.length === 0 ? (
+                <div className="muted text-sm">No file changes recorded.</div>
+              ) : (
+                <div className="files">
+                  {v.changed_files.map((f) => (
+                    <div key={f.path} className="files__row">
+                      <span className={`files__mark files__mark--${f.change_type}`}>
+                        {f.change_type[0].toUpperCase()}
+                      </span>
+                      <span className="mono truncate">{f.path}</span>
+                      <span className="spacer" />
+                      {f.binary ? (
+                        <span className="muted text-xs">binary</span>
+                      ) : (
+                        <span className="mono text-xs">
+                          <span className="plus">+{f.additions}</span>{" "}
+                          <span className="minus">−{f.deletions}</span>
                         </span>
-                        <span className="mono truncate">{f.path}</span>
-                        <span className="spacer" />
-                        {f.binary ? (
-                          <span className="muted text-xs">binary</span>
-                        ) : (
-                          <span className="mono text-xs">
-                            <span className="plus">+{f.additions}</span>{" "}
-                            <span className="minus">−{f.deletions}</span>
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {hasRisk && (
-              <section id="risk" className="stack scroll-mt" style={{ marginTop: 20 }}>
-                {v.regressions.length > 0 && (
-                  <Card className="callout callout--bad" title="Regressions" pad>
-                    <div className="stack" style={{ gap: 8 }}>
-                      {v.regressions.map((r, i) => (
-                        <div key={i} className="row row--wrap" style={{ gap: 8 }}>
-                          <Badge tone={r.severity === "HIGH" ? "bad" : r.severity === "MEDIUM" ? "warn" : "neutral"}>
-                            {r.severity}
-                          </Badge>
-                          <span className="text-sm">{r.detail}</span>
+              <>
+                <hr className="sep" />
+                <section id="risk" className="scroll-mt">
+                  <div className="h-section" style={{ marginBottom: 14 }}>
+                    Risk
+                  </div>
+
+                  <div className="stack" style={{ gap: 18 }}>
+                    {v.regressions.map((r, i) => (
+                      <div key={i} className="rule rule--bad">
+                        <div className="rule__label">Regression</div>
+                        <div className="rule__body">
+                          {r.detail} · <b>{r.severity}</b>
                         </div>
-                      ))}
-                    </div>
-                  </Card>
-                )}
+                      </div>
+                    ))}
 
-                {(attempts.data?.length ?? 0) > 0 && (
-                  <Card className="callout callout--warn" title="Previous attempts touching this area" pad>
-                    <div className="stack" style={{ gap: 10 }}>
-                      {attempts.data!.map((a) => (
-                        <AttemptCard key={a.version_id} a={a} />
-                      ))}
-                    </div>
-                  </Card>
-                )}
+                    {(attempts.data?.length ?? 0) > 0 && (
+                      <div className="rule rule--warn">
+                        <div className="rule__label">Previous attempts touching this area</div>
+                        <div className="stack" style={{ gap: 8, marginTop: 6 }}>
+                          {attempts.data!.map((a) => (
+                            <AttemptCard key={a.version_id} a={a} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                {impact.data && impact.data.entities.length > 0 && (
-                  <Card
-                    title="Change impact"
-                    action={
-                      <span className="muted text-xs">
-                        entire graph · {impact.data.entities.length} entities
-                      </span>
-                    }
-                    flush
-                  >
-                    <ImpactTable entities={impact.data.entities} />
-                  </Card>
-                )}
-              </section>
+                    {impact.data && impact.data.entities.length > 0 && (
+                      <Card
+                        title="Change impact"
+                        action={
+                          <span className="muted text-xs">
+                            entire graph · {impact.data.entities.length} entities
+                          </span>
+                        }
+                        flush
+                      >
+                        <ImpactTable entities={impact.data.entities} />
+                      </Card>
+                    )}
+                  </div>
+                </section>
+              </>
             )}
 
-            <section id="analysis" className="scroll-mt" style={{ marginTop: 20 }}>
+            <hr className="sep" />
+
+            <section id="analysis" className="scroll-mt">
+              <div className="section-head">
+                <div className="h-section">Analysis</div>
+                {v.analysis && v.analysis.summary && (
+                  <span className="row" style={{ gap: 6 }}>
+                    {v.analysis.risk && (
+                      <Badge tone={riskTone(v.analysis.risk)}>
+                        {v.analysis.risk} risk · {v.analysis.provider}
+                      </Badge>
+                    )}
+                  </span>
+                )}
+              </div>
               {v.analysis && v.analysis.summary ? (
-                <Card
-                  title="Analysis"
-                  action={
-                    <span className="row" style={{ gap: 6 }}>
-                      {v.analysis.risk && (
-                        <Badge tone={riskTone(v.analysis.risk)}>{v.analysis.risk} risk</Badge>
-                      )}
-                      <span className="muted text-xs">{v.analysis.provider}</span>
-                    </span>
-                  }
-                  pad
-                >
-                  <p style={{ fontSize: "0.9375rem" }}>{v.analysis.summary}</p>
+                <>
+                  <p style={{ fontSize: "0.9rem", lineHeight: 1.6, maxWidth: "70ch" }}>
+                    {v.analysis.summary}
+                  </p>
                   {v.analysis.reasoning && (
-                    <p className="secondary text-sm" style={{ marginTop: 8 }}>
+                    <p className="secondary text-sm" style={{ marginTop: 10, maxWidth: "70ch" }}>
                       {v.analysis.reasoning}
                     </p>
                   )}
                   {v.analysis.recommendation && (
-                    <p style={{ marginTop: 10 }}>
+                    <p style={{ marginTop: 10, maxWidth: "70ch", fontSize: "0.85rem" }}>
                       <b>Recommendation:</b> {v.analysis.recommendation}
                     </p>
                   )}
@@ -254,32 +273,30 @@ export function VersionDetail() {
                       ))}
                     </ul>
                   )}
-                  <p className="muted text-xs" style={{ marginTop: 10 }}>
+                  <p className="muted text-xs" style={{ marginTop: 12 }}>
                     Interpretation only — never overrides the Git, test, or metric facts above.
                   </p>
-                </Card>
+                </>
               ) : (
-                <Card title="Analysis" pad>
-                  <div className="muted text-sm">
-                    No analysis stored. Run <code>devmemory analyze {v.version_id}</code>.
-                  </div>
-                </Card>
+                <div className="muted text-sm">
+                  No analysis stored. Run <code>devmemory analyze {v.version_id}</code>.
+                </div>
               )}
             </section>
 
             {diff.data && (
-              <section id="diff" className="scroll-mt" style={{ marginTop: 20 }}>
-                <Card
-                  title={
-                    <>
-                      Diff · {shortSha(v.parent_commit)} → {shortSha(v.git_commit)}
-                    </>
-                  }
-                  flush
-                >
-                  <DiffView raw={diff.data} />
-                </Card>
-              </section>
+              <>
+                <hr className="sep" />
+                <section id="diff" className="scroll-mt">
+                  <div className="h-section" style={{ marginBottom: 12 }}>
+                    Diff · <span className="mono">{shortSha(v.parent_commit)}</span> →{" "}
+                    <span className="mono">{shortSha(v.git_commit)}</span>
+                  </div>
+                  <Card flush>
+                    <DiffView raw={diff.data} />
+                  </Card>
+                </section>
+              </>
             )}
           </>
         );
@@ -287,6 +304,58 @@ export function VersionDetail() {
     </Async>
   );
 }
+
+/**
+ * A one-sentence read of the version, assembled from the recorded facts only —
+ * tests, metric movement, regressions, prior attempts. No interpretation; the
+ * Analysis section below is where that lives.
+ */
+function VersionLead({ v, attempts }: { v: DevelopmentVersion; attempts: number }) {
+  const tests = v.tests && v.tests.total > 0 ? v.tests : null;
+  const testClause = tests
+    ? tests.failed > 0
+      ? `${tests.failed} of ${tests.passed + tests.failed} tests fail`
+      : `all ${tests.passed} tests pass`
+    : null;
+
+  const moved = v.metrics.find((m) => m.before != null && m.after != null && m.before !== m.after);
+  const movedPct =
+    moved && moved.before ? ((moved.after! - moved.before) / Math.abs(moved.before)) * 100 : null;
+
+  const worst = v.regressions[0];
+
+  return (
+    <>
+      {testClause ? cap(testClause) : "No test results were recorded"}
+      {moved && (
+        <>
+          {" and "}
+          <span className="mono" style={{ fontSize: "0.8em" }}>
+            {moved.name}
+          </span>{" "}
+          went {moved.before} → {moved.after}
+          {movedPct != null && ` (${movedPct > 0 ? "+" : ""}${movedPct.toFixed(1)}%)`}
+        </>
+      )}
+      {worst ? (
+        <>
+          {" — recorded as a "}
+          <b>{worst.severity.toLowerCase()}</b> regression.
+        </>
+      ) : (
+        "."
+      )}
+      {attempts > 0 && (
+        <>
+          {" "}
+          {attempts} earlier attempt{attempts === 1 ? "" : "s"} in this area also went wrong.
+        </>
+      )}
+    </>
+  );
+}
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function TraceRow({ node }: { node: TraceNode }) {
   const tone = node.status

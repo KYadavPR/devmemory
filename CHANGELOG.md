@@ -6,6 +6,36 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed — Dashboard redesign: "warm paper"
+
+- A new visual language across every screen: an off-white ground, hairline rules
+  instead of shadows, **Newsreader** for page titles and lead lines, **IBM Plex
+  Sans/Mono** for the interface and the numbers. All three are self-hosted
+  (latin WOFF2, ~228 KB, SIL OFL — see `web/THIRD_PARTY_FONTS.md`) so the
+  dashboard looks right offline. Dark mode is a warm-neutral counterpart, not a
+  blue-grey inversion.
+- **Overview** is now a report: a masthead, a single KPI strip split by
+  hairlines, a one-sentence lead generated from the actual numbers ("Four of
+  seven changes landed clean … both regressions sit in discounts"), repeated
+  failures as a red-ruled finding, and a dense **version stream** — ver / intent
+  / tests / metric delta / result, with a wash behind rows that regressed.
+- **Version detail** leads with a breadcrumb, the intent in serif, and a
+  fact-derived summary line; the trace is a flat label/value record instead of a
+  dot timeline, and Files / Risk / Analysis / Diff are rule-separated sections
+  rather than stacked cards. Risk findings hang off coloured left edges.
+- **Task detail** gains the same masthead + KPI strip treatment; findings and
+  recommended focus become ruled findings; requirements read as a list.
+- **Ask** is set at reading width with a serif title and squared-tail user
+  bubbles.
+- New primitives: `.kpi-strip`, `.rule`, `.stream`, `.split`/`.rail`, `.fbar`,
+  `.lead`, `.h-doc`, `.crumb`.
+
+### Fixed
+
+- `.loop-prompt`, `.chip` and the chat bubbles referenced `--surface` /
+  `--surface-2`, which were never defined — they had been rendering with no
+  background at all.
+
 ### Added — Ask with no setup, on-device LLM, history backfill
 
 - **The Ask chat and `devmemory analyze` now work with no API key.** Engine

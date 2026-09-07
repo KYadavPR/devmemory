@@ -73,7 +73,8 @@ export function Ask() {
   };
 
   return (
-    <>
+    /* A conversation is reading-width, not dashboard-width. */
+    <div style={{ maxWidth: 900 }}>
       <PageHead
         title="Ask"
         subtitle={subtitle}
@@ -197,7 +198,7 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
           </form>
         </Card>
       )}
-    </>
+    </div>
   );
 }
 

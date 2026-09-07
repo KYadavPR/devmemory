@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   useTaskState,
@@ -11,10 +11,14 @@ import {
   setRequirement,
 } from "@/api/client";
 import { Async } from "@/components/Async";
-import { Badge, Card, PageHead, StatTile } from "@/components/primitives";
+import { Badge, Card } from "@/components/primitives";
 import { Icon } from "@/components/Icon";
 import { statusTone, statusLabel, type Tone } from "@/lib/status";
 import { shortSha, relativeTime } from "@/lib/format";
+
+/** Tone → the CSS custom property that carries its colour. */
+const toneVar = (t: Tone): string =>
+  t === "ok" ? "ok" : t === "bad" ? "bad" : t === "warn" ? "warn" : "text";
 import {
   m,
   AnimatePresence,
@@ -126,86 +130,111 @@ export function TaskDetail() {
     <Async query={state}>
       {(s) => (
         <>
-          <PageHead
-            title={
-              <span className="row" style={{ gap: 10 }}>
-                <span className="mono">{s.task.id}</span>
+          <div className="page-head__row" style={{ alignItems: "flex-start" }}>
+            <div style={{ minWidth: 0 }}>
+              <div className="crumb">
+                <Link to="/tasks">Tasks</Link> / <span className="mono">{s.task.id}</span>
+              </div>
+              <div className="row" style={{ gap: 10 }}>
+                <span className="mono" style={{ fontSize: "1rem", fontWeight: 600 }}>
+                  {s.task.id}
+                </span>
                 <Badge tone={statusTone(s.overall_status)}>{statusLabel(s.overall_status)}</Badge>
-              </span>
-            }
-            subtitle={s.task.goal}
-            actions={
-              <>
-                <Pressable
-                  className={`btn${auto ? " btn--primary" : ""}`}
-                  onClick={() => setMode(!auto)}
-                  title="Auto: re-run refresh on an interval and keep the loop prompt current. Stops on READY / BLOCKED or if findings regress."
-                >
-                  <Icon name={auto ? "refresh" : "target"} size={14} />
-                  Auto-loop {auto ? "on" : "off"}
-                </Pressable>
-                <Pressable
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => refresh.mutate()}
-                >
-                  <RefreshGlyph spinning={refresh.isPending} />
-                  Refresh
-                </Pressable>
-                <Pressable
-                  className="btn btn--primary"
-                  disabled={busy}
-                  onClick={() => complete.mutate()}
-                  title="Runs a full re-check; only reports READY if the evidence supports it"
-                >
-                  <Icon name="check" size={14} />
-                  Evaluate completion
-                </Pressable>
-              </>
-            }
-          />
+              </div>
+              <div className="h-doc" style={{ marginTop: 8, fontSize: "1.2rem" }}>
+                {s.task.goal}
+              </div>
+            </div>
+            <div className="row" style={{ gap: 8, flex: "none" }}>
+              <Pressable
+                className={`btn${auto ? " btn--primary" : ""}`}
+                onClick={() => setMode(!auto)}
+                title="Auto: re-run refresh on an interval and keep the loop prompt current. Stops on READY / BLOCKED or if findings regress."
+              >
+                <Icon name={auto ? "refresh" : "target"} size={14} />
+                Auto-loop {auto ? "on" : "off"}
+              </Pressable>
+              <Pressable className="btn" disabled={busy} onClick={() => refresh.mutate()}>
+                <RefreshGlyph spinning={refresh.isPending} />
+                Refresh
+              </Pressable>
+              <Pressable
+                className="btn btn--primary"
+                disabled={busy}
+                onClick={() => complete.mutate()}
+                title="Runs a full re-check; only reports READY if the evidence supports it"
+              >
+                <Icon name="check" size={14} />
+                Evaluate completion
+              </Pressable>
+            </div>
+          </div>
 
           <StatusBanner s={s} />
 
           <LoopPrompt s={s} auto={auto} guardTrip={guardTrip} refreshing={refresh.isPending} />
 
-          <div className="grid grid--4" style={{ marginTop: 4 }}>
-            <StatTile
-              label="Requirements"
-              value={`${s.requirements.filter((r) => r.status === "COMPLETE").length} / ${s.requirements.length}`}
-              icon="target"
-            />
-            <StatTile
-              label="Tests"
-              value={s.tests.status === "NOT_RUN" ? "—" : `${s.tests.passed} pass`}
-              sub={
-                s.tests.status === "NOT_RUN"
+          <div className="kpi-strip" style={{ marginTop: 22 }}>
+            <div className="kpi">
+              <div className="kpi__label">Requirements</div>
+              <div className="kpi__value">
+                {s.requirements.filter((r) => r.status === "COMPLETE").length} / {s.requirements.length}
+              </div>
+              <div className="kpi__sub">
+                {s.requirements.length === 0
+                  ? "none defined"
+                  : s.requirements.every((r) => r.status === "COMPLETE")
+                    ? "all complete"
+                    : "not all met"}
+              </div>
+            </div>
+            <div className="kpi">
+              <div className="kpi__label">Tests</div>
+              <div
+                className="kpi__value"
+                style={{ color: `var(--${toneVar(statusTone(s.tests.status))})` }}
+              >
+                {s.tests.status === "NOT_RUN" ? "—" : `${s.tests.passed} pass`}
+              </div>
+              <div className="kpi__sub">
+                {s.tests.status === "NOT_RUN"
                   ? "not run"
-                  : `${s.tests.failed} failed · ${statusLabel(s.tests.status)}`
-              }
-              tone={statusTone(s.tests.status)}
-              icon="check"
-            />
-            <StatTile
-              label="Working tree"
-              value={s.git.working_tree_clean ? "clean" : "dirty"}
-              sub={`${s.git.files_changed} files  +${s.git.lines_added}/-${s.git.lines_deleted}`}
-              tone={s.git.working_tree_clean ? "ok" : "warn"}
-              icon="commit"
-            />
-            <StatTile
-              label="Impact"
-              value={s.impact.available ? `${s.impact.affected_files} files` : "—"}
-              sub={s.impact.available ? `${s.impact.affected_tests} tests` : (s.impact.reason ?? "")}
-              icon="layers"
-            />
+                  : `${s.tests.failed} failed · ${statusLabel(s.tests.status)}`}
+              </div>
+            </div>
+            <div className="kpi">
+              <div className="kpi__label">Working tree</div>
+              <div
+                className="kpi__value kpi__value--word"
+                style={{ color: s.git.working_tree_clean ? "var(--ok)" : "var(--warn)" }}
+              >
+                {s.git.working_tree_clean ? "clean" : "dirty"}
+              </div>
+              <div className="kpi__sub mono">
+                {s.git.files_changed} files · +{s.git.lines_added}/−{s.git.lines_deleted}
+              </div>
+            </div>
+            <div className="kpi">
+              <div className="kpi__label">Impact</div>
+              <div className="kpi__value">
+                {s.impact.available ? `${s.impact.affected_files} files` : "—"}
+              </div>
+              <div className="kpi__sub">
+                {s.impact.available
+                  ? `${s.impact.affected_tests} tests · entire graph`
+                  : (s.impact.reason ?? "")}
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid--2" style={{ alignItems: "start", marginTop: 16 }}>
-            <div className="stack">
-              <Card title="Requirements" pad>
-                {s.requirements.length === 0 && <p className="muted">No requirements.</p>}
-                <div className="stack" style={{ gap: 10 }}>
+          <div className="split split--wide-rail" style={{ marginTop: 30 }}>
+            <div className="stack" style={{ gap: 26 }}>
+              <section>
+                <div className="h-section" style={{ marginBottom: 12 }}>
+                  Requirements
+                </div>
+                {s.requirements.length === 0 && <p className="muted text-sm">No requirements.</p>}
+                <div className="stack" style={{ gap: 0 }}>
                   {s.requirements.map((r) => (
                     <div key={r.id} className="req-row">
                       <Pressable
@@ -239,34 +268,36 @@ export function TaskDetail() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </section>
 
               {s.recommended_focus.length > 0 && (
-                <Card title="Recommended focus" pad>
-                  <ul className="rec-list">
+                <div className="rule rule--accent">
+                  <div className="rule__label">Recommended focus</div>
+                  <ul className="rec-list" style={{ marginTop: 4 }}>
                     {s.recommended_focus.map((f, i) => (
                       <li key={i}>
                         <Icon name="arrowRight" size={13} /> {f}
                       </li>
                     ))}
                   </ul>
-                </Card>
+                </div>
               )}
 
               {s.findings.length > 0 && s.overall_status !== "READY" && (
-                <Card title="Findings" pad>
-                  <ul className="warn-list">
+                <div className="rule rule--warn">
+                  <div className="rule__label">Findings</div>
+                  <ul className="warn-list" style={{ marginTop: 4 }}>
                     {s.findings.map((f, i) => (
                       <li key={i}>
                         <Icon name="alert" size={13} /> {f}
                       </li>
                     ))}
                   </ul>
-                </Card>
+                </div>
               )}
             </div>
 
-            <div className="stack">
+            <div className="rail">
               <Card title="Git & checkpoint" pad>
                 <dl className="kv">
                   <dt>branch</dt>
@@ -308,15 +339,20 @@ export function TaskDetail() {
             </div>
           </div>
 
-          <Card title="State timeline" pad style={{ marginTop: 16 }}>
+          <hr className="sep" />
+
+          <section>
+            <div className="h-section" style={{ marginBottom: 14 }}>
+              State timeline
+            </div>
             <Async
               query={snapshots}
               isEmpty={(rows) => rows.length === 0}
-              empty={<p className="muted">No snapshots yet.</p>}
+              empty={<p className="muted text-sm">No snapshots yet.</p>}
             >
               {(rows) => <Timeline rows={rows} />}
             </Async>
-          </Card>
+          </section>
         </>
       )}
     </Async>
@@ -379,7 +415,7 @@ function LoopPrompt({
         </Badge>
       }
       pad
-      style={{ marginBottom: 16 }}
+      style={{ marginTop: 22 }}
     >
       {guardTrip && (
         <p className="callout callout--warn" style={{ padding: "8px 10px", marginTop: 0 }}>
@@ -454,33 +490,43 @@ function StatusBanner({ s }: { s: NormalizedState }) {
   };
   const isReady = s.overall_status === "READY";
   return (
-    <Card
-      className={`callout callout--${tone === "ok" ? "ok" : tone === "bad" ? "bad" : tone === "warn" ? "warn" : ""}`}
-      pad
-      style={{ marginBottom: 16, overflow: "hidden" }}
-    >
+    <div style={{ marginTop: 22, overflow: "hidden" }}>
       <AnimatePresence mode="wait" initial={false}>
         <m.div
           key={s.overall_status}
-          className="row"
-          style={{ gap: 10, alignItems: "flex-start" }}
           initial={reduce ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
           transition={isReady ? spring.bouncy : spring.gentle}
         >
-          {isReady ? (
-            <DrawCheck size={18} />
-          ) : (
-            <Icon name={tone === "bad" ? "alert" : "target"} size={18} />
-          )}
-          <div>
-            <div style={{ fontWeight: 600 }}>{statusLabel(s.overall_status)}</div>
-            <div className="muted text-sm">{msg[s.overall_status]}</div>
+          {/* the read of the task, in the same voice as the rest of the app */}
+          <p className="lead lead--sm" style={{ margin: 0 }}>
+            {msg[s.overall_status] ?? statusLabel(s.overall_status)}
+          </p>
+          <div
+            className={`rule rule--${tone === "ok" ? "ok" : tone === "bad" ? "bad" : tone === "warn" ? "warn" : "accent"} row`}
+            style={{ gap: 9, marginTop: 14, fontSize: "0.8125rem", color: "var(--text-strong)" }}
+          >
+            {isReady ? (
+              <DrawCheck size={15} />
+            ) : (
+              <Icon name={tone === "bad" ? "alert" : "target"} size={15} />
+            )}
+            <span
+              style={{
+                fontWeight: 600,
+                color: `var(--${tone === "ok" ? "ok" : tone === "bad" ? "bad" : tone === "warn" ? "warn" : "accent-text"})`,
+              }}
+            >
+              {statusLabel(s.overall_status).toUpperCase()}
+            </span>
+            {s.refreshed_at && (
+              <span className="muted">· refreshed {relativeTime(s.refreshed_at)}</span>
+            )}
           </div>
         </m.div>
       </AnimatePresence>
-    </Card>
+    </div>
   );
 }
 

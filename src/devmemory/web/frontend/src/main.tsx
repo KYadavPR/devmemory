@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LazyMotion, MotionConfig, domAnimation } from "motion/react";
 import { App } from "@/App";
 import { ThemeProvider } from "@/theme/ThemeProvider";
+import "@/theme/fonts.css";
 import "@/theme/theme.css";
 import "@/theme/components.css";
 

@@ -14,9 +14,9 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 16px 12px;
-  background: var(--bg-elevated);
+  gap: 2px;
+  padding: 18px 14px;
+  background: var(--bg-sunken);
   border-right: 1px solid var(--border);
   overflow-y: auto;
 }
@@ -24,12 +24,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 8px 16px;
+  padding: 6px 8px 18px;
 }
 .sidebar__name {
-  font-weight: 680;
-  letter-spacing: -0.02em;
-  font-size: 0.95rem;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.2;
 }
 .sidebar__repo {
   font-size: 0.6875rem;
@@ -43,33 +44,42 @@
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  border-radius: var(--r-2);
-  font-size: 0.8438rem;
-  font-weight: 520;
+  gap: 9px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  font-size: 0.8125rem;
+  font-weight: 400;
   color: var(--text-secondary);
   transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.nav-link svg {
+  flex: none;
+  opacity: 0.8;
 }
 .nav-link:hover {
   background: var(--bg-hover);
   color: var(--text);
 }
+/* The active item is a warm ink block, not a coloured chip — the accent is
+   saved for links and the primary action. */
 .nav-link--active {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-  font-weight: 580;
+  background: var(--bg-active);
+  color: var(--text);
+  font-weight: 500;
 }
 .nav-link--active svg {
-  color: var(--accent);
+  color: var(--text);
+  opacity: 1;
 }
 .sidebar__foot {
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-  padding: 10px 8px 4px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  line-height: 1.9;
+  color: var(--text-faint);
+  padding: 10px 9px 4px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 3px;
   border-top: 1px solid var(--border);
 }
 
@@ -117,8 +127,8 @@
   align-items: center;
   gap: 10px;
   height: var(--topbar-h);
-  padding: 0 16px;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  padding: 0 26px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
@@ -130,19 +140,21 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 .topbar__search {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  min-width: 200px;
+  min-width: 220px;
   border-radius: var(--r-2);
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  background: transparent;
   color: var(--text-muted);
-  font-size: 0.8125rem;
+  font-size: 0.78rem;
   transition: border-color var(--dur-1) var(--ease);
 }
 .topbar__search:hover {
@@ -399,6 +411,68 @@
   gap: 4px;
 }
 
+/* ---- feature bar (overview rail) ----------------------------
+   One segment per recorded attempt, coloured by outcome — the shape of a
+   feature's history at a glance, no legend needed. */
+
+.fbar {
+  display: block;
+}
+.fbar__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.fbar__name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.fbar__state {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.fbar__state--ok {
+  color: var(--ok);
+}
+.fbar__state--bad {
+  color: var(--bad);
+}
+.fbar__state--warn {
+  color: var(--warn);
+}
+.fbar__state--neutral,
+.fbar__state--info,
+.fbar__state--accent {
+  color: var(--text-muted);
+}
+.fbar__segs {
+  display: flex;
+  gap: 3px;
+}
+.fbar__seg {
+  flex: 1;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  transition: transform var(--dur-1) var(--ease);
+}
+.fbar:hover .fbar__seg {
+  transform: scaleY(1.5);
+}
+.fbar__seg--ok {
+  background: var(--ok);
+}
+.fbar__seg--bad {
+  background: var(--bad);
+}
+.fbar__seg--warn {
+  background: var(--warn);
+}
+
 /* ---- health strip ----------------------------------------- */
 
 .health-strip {
@@ -574,26 +648,29 @@
   top: var(--topbar-h);
   z-index: 20;
   display: flex;
-  gap: 4px;
-  padding: 8px 0;
-  margin-bottom: 8px;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  gap: 22px;
+  padding: 0;
+  margin-top: 24px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
 .subnav__link {
-  padding: 5px 11px;
-  border-radius: var(--r-2);
+  padding: 9px 0;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
   font-size: 0.8125rem;
-  font-weight: 520;
-  color: var(--text-secondary);
+  font-weight: 400;
+  color: var(--text-muted);
+  transition: color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
 }
 .subnav__link:hover {
-  background: var(--bg-hover);
+  color: var(--text);
 }
 .subnav__link--active {
-  background: var(--accent-soft);
-  color: var(--accent-text);
+  border-bottom-color: var(--accent);
+  color: var(--text);
+  font-weight: 500;
 }
 .scroll-mt {
   scroll-margin-top: calc(var(--topbar-h) + 52px);
@@ -601,62 +678,38 @@
 
 /* ---- trace ------------------------------------------ */
 
+/* A record, not a journey: label in the left gutter, fact on the right. The
+   old dot-and-connector timeline added ornament without adding information. */
 .trace {
   display: flex;
   flex-direction: column;
+  gap: 13px;
 }
 .trace__node {
-  position: relative;
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: 118px minmax(0, 1fr);
   gap: 14px;
-  padding: 10px 0 10px 20px;
-}
-.trace__node::before {
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 15px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-.trace__node--entire::before {
-  background: var(--info);
-  box-shadow: 0 0 0 3px var(--info-soft);
-}
-.trace__node--status::before,
-.trace__node--analysis::before {
-  background: var(--warn);
-  box-shadow: 0 0 0 3px var(--warn-soft);
-}
-.trace__node:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 24px;
-  bottom: -10px;
-  width: 2px;
-  background: var(--border-strong);
+  align-items: baseline;
 }
 .trace__label {
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  padding-top: 2px;
+  overflow-wrap: anywhere;
 }
 .trace__value {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
   word-break: break-word;
 }
 .trace__detail {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   margin-top: 2px;
+}
+@media (max-width: 560px) {
+  .trace__node {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }
 
 /* ---- metric rows ---------------------------------- */
@@ -954,7 +1007,7 @@ textarea.input {
 .loop-prompt {
   margin: 0;
   padding: 12px 14px;
-  background: var(--surface-2, var(--surface));
+  background: var(--bg-sunken);
   border: 1px solid var(--border);
   border-radius: var(--r-2);
   font-family: var(--font-mono);
@@ -991,17 +1044,18 @@ textarea.input {
   max-width: 560px;
 }
 .chip {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 0.8125rem;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--r-full);
+  padding: 5px 11px;
+  font-size: 0.75rem;
   cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
 }
 .chip:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .chat__msg {
   display: flex;
@@ -1026,17 +1080,20 @@ textarea.input {
 }
 .chat__msg--user .chat__body {
   background: var(--accent);
-  color: #fff;
-  border-radius: var(--r-2);
-  padding: 8px 12px;
+  color: var(--text-on-accent);
+  /* the corner nearest the sender is squared off, so the tail reads as "mine" */
+  border-radius: 12px 12px 4px 12px;
+  padding: 9px 13px;
+  font-size: 0.85rem;
   white-space: pre-wrap;
 }
 .chat__msg--genie .chat__body {
-  background: var(--surface-2, var(--surface));
+  background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--r-2);
-  padding: 12px 14px;
-  font-size: 0.9375rem;
+  border-radius: var(--r-3);
+  padding: 14px 16px;
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 .chat__sql summary {
   cursor: pointer;

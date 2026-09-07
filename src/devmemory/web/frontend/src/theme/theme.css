@@ -1,128 +1,149 @@
 /* ============================================================================
    DevMemory dashboard — design system
-   Tokens are defined once on :root (light) and overridden for dark. Every
-   color has a light definition; dark only remaps. Components never hard-code
-   a hex value.
+
+   The look is "warm paper": an off-white ground, hairline rules instead of
+   shadows, a serif (Newsreader) for the editorial voice and IBM Plex for the
+   interface and the numbers. Structure comes from rules and alignment, not
+   from boxes stacked on boxes.
+
+   Tokens are defined once on :root (light) and remapped for dark. Every color
+   has a light definition; components never hard-code a hex value.
    ========================================================================= */
 
 :root {
-  /* -- neutrals ------------------------------------------------------------ */
-  --bg: #fcfcfd;
+  /* -- neutrals: warm paper ---------------------------------------------- */
+  --bg: #faf9f7;
   --bg-elevated: #ffffff;
-  --bg-sunken: #f5f6f8;
-  --bg-hover: #f0f1f4;
-  --bg-active: #e9eaef;
+  --bg-sunken: #f2f0ec;
+  --bg-hover: #f0ece3;
+  --bg-active: #e6e2d9;
 
-  --border: #e6e7ec;
-  --border-strong: #d7d9e0;
-  --border-accent: #d7d4fa;
+  --border: #e7e3db;
+  --border-strong: #dcd7cc;
+  /* inner dividers inside a bordered surface — one step lighter than --border */
+  --border-hairline: #f0ece3;
+  --border-accent: #c9c5f0;
 
-  --text: #15171d;
-  --text-secondary: #565c6b;
-  --text-muted: #878d9b;
+  --text: #1b1a17;
+  --text-strong: #2c2924;
+  --text-secondary: #57534a;
+  --text-muted: #8a8377;
+  --text-faint: #a49d8f;
   --text-on-accent: #ffffff;
 
   /* -- brand + semantic ------------------------------------------------- */
-  --accent: #5b53e8;
-  --accent-hover: #4a41dd;
-  --accent-press: #3f37c9;
+  --accent: #4b41d1;
+  --accent-hover: #3f37c9;
+  --accent-press: #362fb0;
   --accent-soft: #eeedfd;
-  --accent-border: #d9d6fa;
+  --accent-border: #c9c5f0;
   --accent-text: #4b41d1;
 
-  --ok: #12805c;
-  --ok-soft: #e4f5ee;
-  --ok-border: #b9e2d1;
+  --ok: #0e6b4d;
+  --ok-soft: #e4f2ea;
+  --ok-border: #b9ddca;
   --ok-strong: #0e6b4d;
 
-  --warn: #9a6700;
-  --warn-soft: #fbf1de;
-  --warn-border: #ecd9a8;
+  --warn: #855800;
+  --warn-soft: #f7efdd;
+  --warn-border: #e6d3a6;
   --warn-strong: #855800;
 
-  --bad: #cf2230;
-  --bad-soft: #fdeceb;
-  --bad-border: #f3c4c1;
+  --bad: #b31b28;
+  --bad-soft: #fbeceb;
+  --bad-border: #eec4c1;
   --bad-strong: #b31b28;
+  /* the faint row tint behind a regression in a dense list */
+  --bad-wash: #fcf1f1;
 
-  --info: #0e6fd6;
+  --info: #0a5bb0;
   --info-soft: #e7f1fd;
   --info-border: #bcdafb;
   --info-strong: #0a5bb0;
 
   /* -- data-viz series (color-blind-tuned; see charts) ----------------- */
-  --series-1: #5b53e8;
-  --series-2: #0e9f9f;
-  --series-3: #e0821d;
-  --series-4: #c6417c;
-  --series-5: #6b8f2e;
-  --series-6: #8a63d2;
+  --series-1: #4b41d1;
+  --series-2: #0e8a8a;
+  --series-3: #b5701a;
+  --series-4: #a8356b;
+  --series-5: #5b7a26;
+  --series-6: #7551bd;
 
   /* -- radius / elevation / motion ------------------------------------- */
   --r-1: 6px;
-  --r-2: 9px;
-  --r-3: 13px;
+  --r-2: 8px;
+  --r-3: 12px;
   --r-full: 999px;
 
-  --shadow-xs: 0 1px 2px rgba(15, 17, 28, 0.04);
-  --shadow-sm: 0 1px 3px rgba(15, 17, 28, 0.06), 0 1px 2px rgba(15, 17, 28, 0.04);
-  --shadow-md: 0 4px 14px -3px rgba(15, 17, 28, 0.1), 0 2px 6px -2px rgba(15, 17, 28, 0.06);
-  --shadow-lg: 0 20px 48px -12px rgba(15, 17, 28, 0.2), 0 6px 16px -6px rgba(15, 17, 28, 0.12);
+  /* Surfaces sit on rules, not shadows — elevation is reserved for things
+     that genuinely float (menus, the command palette). */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: 0 4px 16px -4px rgba(40, 34, 22, 0.12), 0 2px 6px -2px rgba(40, 34, 22, 0.08);
+  --shadow-lg: 0 24px 56px -14px rgba(40, 34, 22, 0.24), 0 8px 18px -8px rgba(40, 34, 22, 0.14);
 
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   --dur-1: 110ms;
   --dur-2: 190ms;
 
   /* -- type ----------------------------------------------------------- */
-  --font-sans: "Inter var", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo,
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo,
     Consolas, monospace;
 
   --sidebar-w: 236px;
-  --topbar-h: 56px;
-  --content-max: 1200px;
+  --topbar-h: 52px;
+  --content-max: 1160px;
+  --rail-w: 320px;
 
   color-scheme: light;
 }
 
+/* Dark is the same paper at night: warm-neutral, never blue-grey, and still
+   built from rules rather than shadows. */
 :root[data-theme="dark"] {
-  --bg: #0c0d11;
-  --bg-elevated: #15161b;
-  --bg-sunken: #101116;
-  --bg-hover: #1c1e25;
-  --bg-active: #24262e;
+  --bg: #14130f;
+  --bg-elevated: #1b1a15;
+  --bg-sunken: #100f0c;
+  --bg-hover: #232118;
+  --bg-active: #2b2920;
 
-  --border: #24262e;
-  --border-strong: #34373f;
-  --border-accent: #39356c;
+  --border: #2a2822;
+  --border-strong: #3a382f;
+  --border-hairline: #23211b;
+  --border-accent: #3b3670;
 
-  --text: #e7e8ec;
-  --text-secondary: #9aa0ad;
-  --text-muted: #6b7280;
+  --text: #ecebe5;
+  --text-strong: #f4f3ee;
+  --text-secondary: #a8a397;
+  --text-muted: #7d7869;
+  --text-faint: #635f53;
   --text-on-accent: #ffffff;
 
   --accent: #8b83f7;
   --accent-hover: #9a93f9;
   --accent-press: #7a70f0;
-  --accent-soft: #1e1c3a;
-  --accent-border: #38346b;
-  --accent-text: #a49dfa;
+  --accent-soft: #211f3d;
+  --accent-border: #3b3670;
+  --accent-text: #a9a2fb;
 
-  --ok: #3fb98c;
-  --ok-soft: #0d271f;
-  --ok-border: #1c4438;
-  --ok-strong: #58c9a0;
+  --ok: #4cbf90;
+  --ok-soft: #0e2a20;
+  --ok-border: #1e4a39;
+  --ok-strong: #63cfa2;
 
-  --warn: #e0a43b;
-  --warn-soft: #2a2009;
-  --warn-border: #4a3a15;
-  --warn-strong: #edb857;
+  --warn: #dfa945;
+  --warn-soft: #2b2109;
+  --warn-border: #4d3c16;
+  --warn-strong: #eaba5e;
 
-  --bad: #f2555a;
-  --bad-soft: #2c1416;
-  --bad-border: #522328;
-  --bad-strong: #f7726f;
+  --bad: #f0656a;
+  --bad-soft: #2d1517;
+  --bad-border: #54262a;
+  --bad-strong: #f5807f;
+  --bad-wash: #241315;
 
   --info: #4a9eff;
   --info-soft: #0c2137;
@@ -136,10 +157,10 @@
   --series-5: #9dc256;
   --series-6: #b18df0;
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px -6px rgba(0, 0, 0, 0.55), 0 2px 8px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, 0.7), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: 0 8px 24px -6px rgba(0, 0, 0, 0.6), 0 2px 8px -2px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, 0.72), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
 
   color-scheme: dark;
 }
@@ -161,7 +182,6 @@ html {
 
 body {
   font-family: var(--font-sans);
-  font-feature-settings: "cv05" 1, "cv08" 1, "ss03" 1;
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -197,8 +217,8 @@ code,
 pre,
 .mono {
   font-family: var(--font-mono);
-  font-size: 0.86em;
-  font-feature-settings: normal;
+  font-size: 0.88em;
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {
@@ -247,22 +267,51 @@ pre,
 h1,
 h2,
 h3 {
-  letter-spacing: -0.02em;
   line-height: 1.2;
-  font-weight: 640;
+  font-weight: 600;
+}
+
+/* The editorial voice. Titles and lead paragraphs are set in Newsreader; every
+   other piece of text is Plex Sans or Plex Mono. */
+.serif {
+  font-family: var(--font-serif);
+  letter-spacing: 0;
 }
 
 .h-page {
+  font-family: var(--font-serif);
+  font-size: 2.05rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.h-doc {
+  font-family: var(--font-serif);
   font-size: 1.5rem;
-  font-weight: 660;
-  letter-spacing: -0.025em;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--text-strong);
 }
 .h-section {
-  font-size: 0.75rem;
-  font-weight: 620;
+  font-size: 0.6875rem;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-secondary);
+}
+
+/* The one-sentence read of the page: what a person should take away before
+   they look at anything else. */
+.lead {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-strong);
+  max-width: 64ch;
+}
+.lead--sm {
+  font-size: 1.15rem;
 }
 
 .text-sm {
@@ -273,6 +322,9 @@ h3 {
 }
 .muted {
   color: var(--text-muted);
+}
+.faint {
+  color: var(--text-faint);
 }
 .secondary {
   color: var(--text-secondary);
@@ -316,7 +368,11 @@ h3 {
   width: 100%;
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: 28px 36px 72px;
+  padding: 30px 40px 80px;
+}
+/* Reading-width pages (Ask) sit narrower than data-dense ones. */
+.app-content--narrow {
+  max-width: 940px;
 }
 
 @media (max-width: 960px) {
@@ -326,6 +382,29 @@ h3 {
   .app-content {
     padding: 20px 18px 56px;
   }
+}
+
+/* ---- the two-column reading layout: body + rail ------------------- */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rail-w);
+  gap: 30px;
+  align-items: start;
+}
+.split--wide-rail {
+  --rail-w: 330px;
+}
+@media (max-width: 1040px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
 }
 
 /* ---- primitives: card -------------------------------------------- */
@@ -347,17 +426,172 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 13px 18px;
-  border-bottom: 1px solid var(--border);
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-hairline);
 }
 .card__head .h-section {
   margin: 0;
 }
 .card__body {
-  padding: 16px 18px;
+  padding: 15px 16px;
 }
 .card__body--flush {
   padding: 0;
+}
+
+/* ---- primitives: KPI strip ---------------------------------------
+   One bordered surface split by hairlines, not four floating cards — the
+   numbers read as a single row of facts. */
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--kpi-cols, 4), minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+.kpi {
+  padding: 15px 18px;
+  border-right: 1px solid var(--border-hairline);
+  min-width: 0;
+}
+.kpi:last-child {
+  border-right: none;
+}
+.kpi__label {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.kpi__value {
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+.kpi__value--word {
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+.kpi__sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+@media (max-width: 900px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kpi:nth-child(2n) {
+    border-right: none;
+  }
+  .kpi:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border-hairline);
+  }
+}
+
+/* ---- primitives: rule ---------------------------------------------
+   A finding hung off a coloured left edge. Cheaper than a card and it keeps
+   the page from turning into a stack of boxes. */
+
+.rule {
+  border-left: 3px solid var(--border-strong);
+  padding: 2px 0 2px 16px;
+}
+.rule--bad {
+  border-left-color: var(--bad);
+}
+.rule--warn {
+  border-left-color: var(--warn);
+}
+.rule--ok {
+  border-left-color: var(--ok);
+}
+.rule--accent {
+  border-left-color: var(--accent);
+}
+.rule__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.rule--bad .rule__label {
+  color: var(--bad);
+}
+.rule--warn .rule__label {
+  color: var(--warn);
+}
+.rule--ok .rule__label {
+  color: var(--ok);
+}
+.rule--accent .rule__label {
+  color: var(--accent-text);
+}
+.rule__body {
+  font-size: 0.85rem;
+  color: var(--text-strong);
+  margin-top: 4px;
+  line-height: 1.55;
+}
+
+/* ---- primitives: section head ------------------------------------ */
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* ---- primitives: stream (dense record list) ----------------------
+   The version stream and its relatives: a hairline table with a mono header,
+   tabular figures, and a wash behind rows that went wrong. */
+
+.stream__head,
+.stream__row {
+  display: grid;
+  grid-template-columns: var(--stream-cols);
+  gap: 12px;
+  align-items: center;
+}
+.stream__head {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+}
+.stream__row {
+  padding: 10px 12px;
+  margin: 0 -12px;
+  border-bottom: 1px solid var(--border-hairline);
+  font-size: 0.8125rem;
+  color: inherit;
+  transition: background var(--dur-1) var(--ease);
+}
+.stream__row:last-child {
+  border-bottom: none;
+}
+a.stream__row:hover {
+  background: var(--bg-sunken);
+}
+.stream__row--bad {
+  background: var(--bad-wash);
+}
+a.stream__row--bad:hover {
+  background: var(--bad-soft);
+}
+.stream__end {
+  justify-self: end;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ---- primitives: grid ------------------------------------------- */
@@ -475,10 +709,10 @@ kbd {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 8px 13px;
+  padding: 7px 12px;
   border-radius: var(--r-2);
   font-size: 0.8125rem;
-  font-weight: 560;
+  font-weight: 500;
   border: 1px solid var(--border-strong);
   background: var(--bg-elevated);
   color: var(--text);
@@ -554,16 +788,19 @@ select.input {
 }
 .dm-table th {
   text-align: left;
-  padding: 8px 12px;
+  padding: 7px 12px;
   color: var(--text-muted);
-  font-weight: 560;
-  font-size: 0.75rem;
-  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--bg-sunken);
+  border-bottom: 1px solid var(--border-hairline);
   white-space: nowrap;
 }
 .dm-table td {
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-hairline);
   vertical-align: middle;
 }
 .dm-table tr:last-child td {
@@ -665,15 +902,26 @@ select.input {
 }
 .page-head__row {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 .page-head p {
   color: var(--text-secondary);
-  font-size: 0.875rem;
-  margin-top: 4px;
+  font-size: 0.85rem;
+  margin-top: 6px;
+  max-width: 66ch;
+}
+
+/* A breadcrumb over a record page: "Timeline / v4". */
+.crumb {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 7px;
+}
+.crumb a:hover {
+  color: var(--accent-text);
 }
 
 /* ---- fade-in for routed content ------------------ */
@@ -691,7 +939,10 @@ select.input {
 hr.sep {
   border: none;
   border-top: 1px solid var(--border);
-  margin: 22px 0;
+  margin: 32px 0;
+}
+hr.sep--tight {
+  margin: 20px 0;
 }
 
 .stack {
