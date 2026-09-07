@@ -548,7 +548,7 @@ export interface ProjectBriefDoc {
 
 export interface GenieStatus {
   configured: boolean;
-  mode: "genie" | "local" | "none";
+  mode: "genie" | "local" | "rules" | "none";
   engine: string | null;
   space_id: string | null;
   reason: string | null;

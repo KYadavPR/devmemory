@@ -148,11 +148,27 @@ def test_dashboard_index_served(client: TestClient) -> None:
     assert client.get("/static/index.html").status_code == 200
 
 
-def test_genie_status_unconfigured(client: TestClient) -> None:
+def test_genie_status_falls_back_to_rules(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No Genie space and no LLM key -> the built-in rules engine answers.
+    class NoLocalLLM:
+        def __init__(self, _ctx: object) -> None: ...
+
+        is_available = False
+
+        def unavailable_reason(self) -> str:
+            return "no LLM API key"
+
+    monkeypatch.setattr("devmemory.api.app.LocalAskAdapter", NoLocalLLM)
+
     body = client.get("/api/genie/status").json()
-    assert body["configured"] is False
-    assert body["reason"]
-    assert client.post("/api/genie/ask", json={"question": "how many regressions?"}).status_code == 503
+    assert body["configured"] is True
+    assert body["mode"] == "rules"
+
+    r = client.post("/api/genie/ask", json={"question": "how many versions are there?"})
+    assert r.status_code == 200
+    assert r.json()["text"]
 
 
 def test_genie_ask_configured(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:

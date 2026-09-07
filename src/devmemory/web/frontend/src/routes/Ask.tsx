@@ -32,11 +32,13 @@ export function Ask() {
   const reduce = useReducedMotion();
   const status = useGenieStatus();
   const mode = status.data?.mode ?? "none";
-  const engineLabel = mode === "local" ? "Ask" : "Genie";
+  const engineLabel = mode === "genie" ? "Genie" : "Ask";
   const subtitle =
-    mode === "local"
-      ? "Natural-language questions over your development history. A local LLM writes SQL against your DevMemory database and explains the result - no Databricks needed."
-      : "Natural-language questions over your development history, answered by Databricks Genie against the devmemory.analytics tables.";
+    mode === "genie"
+      ? "Natural-language questions over your development history, answered by Databricks Genie against the devmemory.analytics tables."
+      : mode === "local"
+        ? "Natural-language questions over your development history. A local LLM writes SQL against your DevMemory database and explains the result - no Databricks needed."
+        : "Common questions about your development history, answered straight from your local data - no API key needed.";
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -117,12 +119,19 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
                   sub={
                     mode === "local"
                       ? "A local LLM writes the SQL, DevMemory runs it read-only, and the LLM explains the result."
-                      : "Genie writes the SQL, runs it on Databricks, and explains the result."
+                      : mode === "genie"
+                        ? "Genie writes the SQL, runs it on Databricks, and explains the result."
+                        : "Pick a question below, or ask about versions, regressions, tests, files, features, agents or a metric over time."
                   }
                 />
                 {status.data?.engine && (
                   <p className="muted text-xs" style={{ marginTop: 4 }}>
                     engine: {status.data.engine}
+                  </p>
+                )}
+                {mode === "rules" && status.data?.reason && (
+                  <p className="muted text-xs" style={{ marginTop: 6, maxWidth: 460 }}>
+                    {status.data.reason}
                   </p>
                 )}
                 <div className="chat__suggest">

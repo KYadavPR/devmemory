@@ -76,7 +76,7 @@ devmemory compare 6 7             # what changed + metric/test deltas
 devmemory memory --file auth.py   # "has this area failed before?"
 devmemory analyze v7              # interpretation (rules, or an LLM)
 devmemory analytics               # regressions, feature attempts, file churn
-devmemory serve                   # the dashboard (with an "Ask" chat)
+devmemory serve                   # the dashboard + "Ask" chat (works with no API key)
 devmemory mcp --print-config      # wire the MCP server into Claude Code / Cursor
 devmemory doctor                  # check the setup
 ```

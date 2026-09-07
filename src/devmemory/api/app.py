@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from devmemory.__about__ import __version__
+from devmemory.adapters.ask_rules import RulesAskAdapter
 from devmemory.adapters.genie import GenieAdapter, GenieAnswer, GenieUnavailableError
 from devmemory.adapters.graph import GraphImpact
 from devmemory.adapters.local_ask import LocalAskAdapter
@@ -172,13 +173,16 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
         local = LocalAskAdapter(ctx)
         if local.is_available:
             return GenieStatus(configured=True, mode="local", engine=local.engine_label)
+        # The built-in rules engine always works - no key, no Databricks.
         return GenieStatus(
-            configured=False,
-            mode="none",
+            configured=True,
+            mode="rules",
+            engine=RulesAskAdapter(ctx).engine_label,
             reason=(
-                "Ask needs either a Databricks Genie space or an LLM API key. "
-                + (local.unavailable_reason() or "")
-            ).strip(),
+                "Answering common questions from your local history. Add an LLM API "
+                "key (OPENROUTER_API_KEY / GEMINI_API_KEY / ANTHROPIC_API_KEY / "
+                "OPENAI_API_KEY) or a Genie space for open-ended questions."
+            ),
         )
 
     @app.post("/api/genie/ask", response_model=GenieAnswer)
@@ -198,10 +202,7 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
                 return local.ask(question, conversation_id=body.conversation_id)
             except DevMemoryError as exc:  # pragma: no cover - defensive
                 raise HTTPException(status_code=502, detail=exc.message) from exc
-        raise HTTPException(
-            status_code=503,
-            detail=local.unavailable_reason() or "Ask is not configured",
-        )
+        return RulesAskAdapter(ctx).ask(question, conversation_id=body.conversation_id)
 
     # -- versions ------------------------------------------------------
 
