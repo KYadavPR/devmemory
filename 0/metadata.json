@@ -1,0 +1,217 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "01M1YCM276TJCNB2DW89TG5H2V",
+  "session_id": "fcec3b82-fe78-4cb6-b1dc-40e4f8a72893",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-07T16:53:35.2182935Z",
+  "branch": "docs/project-details",
+  "checkpoints_count": 3,
+  "save_step_count": 1,
+  "files_touched": [],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "22880aefa7b4",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 2462,
+    "cache_creation_tokens": 4636822,
+    "cache_read_tokens": 377203990,
+    "output_tokens": 750641,
+    "api_call_count": 1233
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_01AVhWz5mAnwzPDCfW2D7M6d",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "dataviz"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "1013cc4d85c7",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 469,
+        "end": 470,
+        "entry_ids": [
+          "96114268-5981-46a9-bfe5-b6d5e5c70194"
+        ],
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_01AVhWz5mAnwzPDCfW2D7M6d"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: dataviz",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-design-2026-09-07T09:50:48.4735238Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "design"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "52c2400bd0bc",
+      "timestamp": "2026-09-07T09:50:48.4735238Z",
+      "native": {
+        "command": "/design"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/design",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-compact-2026-09-07T10:11:22.9045012Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "compact"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "0ec552b57b72",
+      "timestamp": "2026-09-07T10:11:22.9045012Z",
+      "native": {
+        "command": "/compact"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/compact",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_013Yh3odHuQsyEzUh2aVbDpM",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "design"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "15025fd0a3b8",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 4845,
+        "end": 4846,
+        "entry_ids": [
+          "59c3efa4-3b88-4da3-a4e0-42fe614858e3"
+        ],
+        "tool_use_id": "toolu_013Yh3odHuQsyEzUh2aVbDpM"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_013Yh3odHuQsyEzUh2aVbDpM"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: design",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_013kMDDu8ZsCRqK5XAYpFpyh",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "artifact-capabilities"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "15025fd0a3b8",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 4929,
+        "end": 4930,
+        "entry_ids": [
+          "be0cb0d7-6d7c-4e88-ac19-9fdc66748666"
+        ],
+        "tool_use_id": "toolu_013kMDDu8ZsCRqK5XAYpFpyh"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_013kMDDu8ZsCRqK5XAYpFpyh"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: artifact-capabilities",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 58
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 976,
+      "user_lines_removed": 145,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".claude/settings.local.json": 18,
+        ".env.example": 7,
+        "README.md": 9,
+        "docs/CONFIGURATION.md": 26,
+        "pyproject.toml": 12,
+        "src/devmemory/adapters/local_ask.py": 47,
+        "src/devmemory/adapters/local_model.py": 216,
+        "src/devmemory/analysis/chain.py": 14,
+        "src/devmemory/analysis/llm.py": 49,
+        "src/devmemory/api/app.py": 10,
+        "src/devmemory/api/schemas.py": 2,
+        "src/devmemory/cli/_errors.py": 3,
+        "src/devmemory/cli/app.py": 6,
+        "src/devmemory/cli/doctor.py": 29,
+        "src/devmemory/cli/model.py": 143,
+        "src/devmemory/config.py": 30,
+        "src/devmemory/services/analysis.py": 3,
+        "src/devmemory/web/frontend/src/api/types.ts": 1,
+        "src/devmemory/web/frontend/src/routes/Ask.tsx": 1,
+        "src/devmemory/web/static/assets/index-CkqH5JAZ.js": 95,
+        "src/devmemory/web/static/index.html": 1,
+        "tests/test_analysis.py": 27,
+        "tests/test_config.py": 2,
+        "tests/test_local_ask.py": 95,
+        "tests/test_local_model.py": 130
+      },
+      "user_removed_per_file": {
+        ".env.example": 6,
+        "README.md": 1,
+        "pyproject.toml": 3,
+        "src/devmemory/adapters/local_ask.py": 13,
+        "src/devmemory/analysis/chain.py": 2,
+        "src/devmemory/analysis/llm.py": 10,
+        "src/devmemory/api/app.py": 4,
+        "src/devmemory/cli/_errors.py": 2,
+        "src/devmemory/cli/app.py": 2,
+        "src/devmemory/cli/doctor.py": 4,
+        "src/devmemory/services/analysis.py": 1,
+        "src/devmemory/web/static/assets/index-DeWdJ-SV.js": 95,
+        "src/devmemory/web/static/index.html": 1,
+        "tests/test_analysis.py": 1
+      }
+    }
+  ]
+}
