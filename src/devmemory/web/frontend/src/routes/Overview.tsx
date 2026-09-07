@@ -151,8 +151,8 @@ export function Overview() {
                         .slice()
                         .reverse()
                         .slice(0, 7)
-                        .map((v) => (
-                          <VersionRow key={v.version_id} v={v} />
+                        .map((v, i) => (
+                          <VersionRow key={v.version_id} v={v} index={i} />
                         ))}
                     </div>
                   )}

@@ -15,6 +15,14 @@ import { Badge, Card, PageHead, StatTile } from "@/components/primitives";
 import { Icon } from "@/components/Icon";
 import { statusTone, statusLabel, type Tone } from "@/lib/status";
 import { shortSha, relativeTime } from "@/lib/format";
+import {
+  m,
+  AnimatePresence,
+  useReducedMotion,
+  spring,
+  Pressable,
+  DrawCheck,
+} from "@/lib/motion";
 import type { NormalizedState, RequirementStatus, SnapshotSummary } from "@/api/types";
 
 const REQ_CYCLE: RequirementStatus[] = ["INCOMPLETE", "PARTIAL", "COMPLETE"];
@@ -128,19 +136,23 @@ export function TaskDetail() {
             subtitle={s.task.goal}
             actions={
               <>
-                <button
+                <Pressable
                   className={`btn${auto ? " btn--primary" : ""}`}
                   onClick={() => setMode(!auto)}
                   title="Auto: re-run refresh on an interval and keep the loop prompt current. Stops on READY / BLOCKED or if findings regress."
                 >
                   <Icon name={auto ? "refresh" : "target"} size={14} />
                   Auto-loop {auto ? "on" : "off"}
-                </button>
-                <button className="btn" disabled={busy} onClick={() => refresh.mutate()}>
-                  {refresh.isPending ? <span className="spinner" /> : <Icon name="refresh" size={14} />}
+                </Pressable>
+                <Pressable
+                  className="btn"
+                  disabled={busy}
+                  onClick={() => refresh.mutate()}
+                >
+                  <RefreshGlyph spinning={refresh.isPending} />
                   Refresh
-                </button>
-                <button
+                </Pressable>
+                <Pressable
                   className="btn btn--primary"
                   disabled={busy}
                   onClick={() => complete.mutate()}
@@ -148,7 +160,7 @@ export function TaskDetail() {
                 >
                   <Icon name="check" size={14} />
                   Evaluate completion
-                </button>
+                </Pressable>
               </>
             }
           />
@@ -196,7 +208,7 @@ export function TaskDetail() {
                 <div className="stack" style={{ gap: 10 }}>
                   {s.requirements.map((r) => (
                     <div key={r.id} className="req-row">
-                      <button
+                      <Pressable
                         className={`req-row__status badge badge--${statusTone(r.status)}`}
                         disabled={busy}
                         title="Cycle INCOMPLETE → PARTIAL → COMPLETE"
@@ -205,8 +217,19 @@ export function TaskDetail() {
                           setReq.mutate({ req: r.id, status: next });
                         }}
                       >
-                        {statusLabel(r.status)}
-                      </button>
+                        <AnimatePresence mode="wait" initial={false}>
+                          <m.span
+                            key={r.status}
+                            style={{ display: "inline-block" }}
+                            initial={{ y: 7, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -7, opacity: 0 }}
+                            transition={spring.snappy}
+                          >
+                            {statusLabel(r.status)}
+                          </m.span>
+                        </AnimatePresence>
+                      </Pressable>
                       <div style={{ minWidth: 0 }}>
                         <div>
                           <span className="mono muted">{r.id}</span> {r.description}
@@ -388,7 +411,40 @@ function LoopPrompt({
   );
 }
 
+function RefreshGlyph({ spinning }: { spinning: boolean }) {
+  const reduce = useReducedMotion();
+  return (
+    <span style={{ position: "relative", width: 14, height: 14, display: "inline-flex" }}>
+      <m.span
+        style={{ display: "inline-flex" }}
+        animate={spinning && !reduce ? { rotate: 360 } : { rotate: 0 }}
+        transition={
+          spinning && !reduce
+            ? { duration: 0.9, repeat: Infinity, ease: "linear" }
+            : { type: "spring", stiffness: 300, damping: 20 }
+        }
+      >
+        <Icon name="refresh" size={14} />
+      </m.span>
+      {spinning && !reduce && (
+        <m.span
+          style={{
+            position: "absolute",
+            inset: -4,
+            borderRadius: "50%",
+            border: "1.5px solid currentColor",
+          }}
+          initial={{ opacity: 0.5, scale: 0.7 }}
+          animate={{ opacity: 0, scale: 1.4 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "easeOut" }}
+        />
+      )}
+    </span>
+  );
+}
+
 function StatusBanner({ s }: { s: NormalizedState }) {
+  const reduce = useReducedMotion();
   const tone = statusTone(s.overall_status);
   const msg: Record<string, string> = {
     READY: "Requirements satisfied, tests pass, working tree clean. Safe to stop.",
@@ -396,19 +452,34 @@ function StatusBanner({ s }: { s: NormalizedState }) {
     BLOCKED: "Cannot safely continue. A human or external decision is needed.",
     IN_PROGRESS: "Actively being worked on. No completion evaluation yet.",
   };
+  const isReady = s.overall_status === "READY";
   return (
     <Card
       className={`callout callout--${tone === "ok" ? "ok" : tone === "bad" ? "bad" : tone === "warn" ? "warn" : ""}`}
       pad
-      style={{ marginBottom: 16 }}
+      style={{ marginBottom: 16, overflow: "hidden" }}
     >
-      <div className="row" style={{ gap: 10, alignItems: "flex-start" }}>
-        <Icon name={tone === "ok" ? "check" : tone === "bad" ? "alert" : "target"} size={18} />
-        <div>
-          <div style={{ fontWeight: 600 }}>{statusLabel(s.overall_status)}</div>
-          <div className="muted text-sm">{msg[s.overall_status]}</div>
-        </div>
-      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <m.div
+          key={s.overall_status}
+          className="row"
+          style={{ gap: 10, alignItems: "flex-start" }}
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
+          transition={isReady ? spring.bouncy : spring.gentle}
+        >
+          {isReady ? (
+            <DrawCheck size={18} />
+          ) : (
+            <Icon name={tone === "bad" ? "alert" : "target"} size={18} />
+          )}
+          <div>
+            <div style={{ fontWeight: 600 }}>{statusLabel(s.overall_status)}</div>
+            <div className="muted text-sm">{msg[s.overall_status]}</div>
+          </div>
+        </m.div>
+      </AnimatePresence>
     </Card>
   );
 }
@@ -472,34 +543,48 @@ function Issues({
 }
 
 function Timeline({ rows }: { rows: SnapshotSummary[] }) {
-  const ordered = [...rows].reverse();
+  const reduce = useReducedMotion();
+  // newest first, so a fresh snapshot slides in at the top and nudges the rest down
+  const ordered = [...rows].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+  const total = ordered.length;
   return (
     <div className="tl">
-      {ordered.map((r, i) => {
-        const tone: Tone = statusTone(r.overall_status);
-        return (
-          <div key={r.id ?? i} className={`tl__item tl__item--${tone}`}>
-            <div className="tl__dot" />
-            <div style={{ minWidth: 0 }}>
-              <div className="row" style={{ gap: 8 }}>
-                <span className="muted mono text-xs">#{i + 1}</span>
-                <Badge tone={tone}>{statusLabel(r.overall_status)}</Badge>
-                <span className="muted text-xs">{relativeTime(r.created_at)}</span>
+      <AnimatePresence initial={false}>
+        {ordered.map((r, i) => {
+          const tone: Tone = statusTone(r.overall_status);
+          return (
+            <m.div
+              key={r.id ?? `i${i}`}
+              className={`tl__item tl__item--${tone}`}
+              initial={reduce ? false : { opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, x: 18 }}
+              transition={spring.gentle}
+            >
+              <div className="tl__dot" />
+              <div style={{ minWidth: 0 }}>
+                <div className="row" style={{ gap: 8 }}>
+                  <span className="muted mono text-xs">#{total - i}</span>
+                  <Badge tone={tone}>{statusLabel(r.overall_status)}</Badge>
+                  <span className="muted text-xs">{relativeTime(r.created_at)}</span>
+                </div>
+                <div className="tl__sub">
+                  <span className="mono">{shortSha(r.commit_sha)}</span>
+                  <span>
+                    tests {r.tests_passed}/{r.tests_failed}
+                  </span>
+                  <span>
+                    reqs {r.requirements_complete}/{r.requirements_total}
+                  </span>
+                  {r.checkpoint_id && (
+                    <span className="mono">ckpt {shortSha(r.checkpoint_id, 8)}</span>
+                  )}
+                </div>
               </div>
-              <div className="tl__sub">
-                <span className="mono">{shortSha(r.commit_sha)}</span>
-                <span>
-                  tests {r.tests_passed}/{r.tests_failed}
-                </span>
-                <span>
-                  reqs {r.requirements_complete}/{r.requirements_total}
-                </span>
-                {r.checkpoint_id && <span className="mono">ckpt {shortSha(r.checkpoint_id, 8)}</span>}
-              </div>
-            </div>
-          </div>
-        );
-      })}
+            </m.div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 }

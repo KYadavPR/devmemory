@@ -3,6 +3,9 @@ import type { VersionListItem } from "@/api/types";
 import { StatusBadge } from "./primitives";
 import { Icon } from "./Icon";
 import { relativeTime, shortSha, vlabel } from "@/lib/format";
+import { m, useReducedMotion, spring } from "@/lib/motion";
+
+const MotionLink = m.create(Link);
 
 export function MetricChip({ name, value }: { name: string; value: number | string | null }) {
   return (
@@ -14,10 +17,17 @@ export function MetricChip({ name, value }: { name: string; value: number | stri
 }
 
 /** compact row used in lists across Overview / Timeline / Search */
-export function VersionRow({ v }: { v: VersionListItem }) {
+export function VersionRow({ v, index = 0 }: { v: VersionListItem; index?: number }) {
+  const reduce = useReducedMotion();
   const metrics = Object.entries(v.metrics ?? {}).slice(0, 2);
   return (
-    <Link className="vrow" to={`/version/${v.version_id}`}>
+    <MotionLink
+      className="vrow"
+      to={`/version/${v.version_id}`}
+      initial={reduce ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...spring.snappy, delay: Math.min(index, 8) * 0.035 }}
+    >
       <span className="vrow__id">{vlabel(v.version_id)}</span>
       <StatusBadge status={v.status} />
       <span className="vrow__main">
@@ -39,7 +49,7 @@ export function VersionRow({ v }: { v: VersionListItem }) {
         <Icon name="commit" size={11} />
         {shortSha(v.git_commit)}
       </span>
-    </Link>
+    </MotionLink>
   );
 }
 

@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useGenieStatus, askGenie } from "@/api/client";
 import { Card, PageHead, EmptyState } from "@/components/primitives";
 import { Icon } from "@/components/Icon";
+import { m, AnimatePresence, useReducedMotion, spring, ThinkingDots } from "@/lib/motion";
 import type { GenieAnswer } from "@/api/types";
 
 type Turn =
@@ -28,6 +29,7 @@ function errorDetail(message: string): string {
 }
 
 export function Ask() {
+  const reduce = useReducedMotion();
   const status = useGenieStatus();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
@@ -114,17 +116,31 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
               </div>
             )}
 
-            {turns.map((turn, i) => (
-              <TurnView key={i} turn={turn} />
-            ))}
+            <AnimatePresence initial={false}>
+              {turns.map((turn, i) => (
+                <m.div
+                  key={i}
+                  initial={reduce ? false : { opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={spring.gentle}
+                >
+                  <TurnView turn={turn} />
+                </m.div>
+              ))}
+            </AnimatePresence>
 
             {ask.isPending && (
-              <div className="chat__msg chat__msg--genie">
+              <m.div
+                className="chat__msg chat__msg--genie"
+                initial={reduce ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={spring.gentle}
+              >
                 <div className="chat__role">Genie</div>
-                <div className="chat__body row" style={{ gap: 8 }}>
-                  <span className="spinner" /> thinking…
+                <div className="chat__body row" style={{ gap: 8, color: "var(--text-muted)" }}>
+                  <ThinkingDots /> thinking…
                 </div>
-              </div>
+              </m.div>
             )}
           </div>
 

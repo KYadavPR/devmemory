@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { HashRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LazyMotion, MotionConfig, domAnimation } from "motion/react";
 import { App } from "@/App";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 import "@/theme/theme.css";
@@ -21,9 +22,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <HashRouter>
-          <App />
-        </HashRouter>
+        <LazyMotion features={domAnimation} strict>
+          <MotionConfig reducedMotion="user" transition={{ type: "spring", stiffness: 400, damping: 30 }}>
+            <HashRouter>
+              <App />
+            </HashRouter>
+          </MotionConfig>
+        </LazyMotion>
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,
