@@ -88,6 +88,16 @@ cp .env.example .env
     "max_diff_bytes": 4000
   },
 
+  "local_model": {                  // bundled on-device LLM (provider name: "local")
+    "enabled": false,               // `devmemory model pull` sets this to true
+    "repo": "bartowski/Qwen2.5-Coder-1.5B-Instruct-GGUF",
+    "filename": "Qwen2.5-Coder-1.5B-Instruct-Q4_K_M.gguf",
+    "context_size": 8192,
+    "max_tokens": 768,
+    "gpu_layers": 0,                // >0 to offload layers to a GPU
+    "threads": null                 // null = all CPU cores
+  },
+
   "graph": {
     "enabled": false,               // change-impact via `entire plugin install graph`
     "binary": null,
@@ -119,6 +129,22 @@ The `fact_guard` runs on every provider's output: it clamps `risk`, forces it to
 at least `medium` when the version's recorded status is adverse, and strips any
 secret value that appears in the text. Analysis is stored in its own table and
 can never overwrite a Git / test / metric fact.
+
+### The on-device model (no API key)
+
+```bash
+pip install "devmemory-cli[local-llm]"   # the llama.cpp runtime
+devmemory model pull                      # ~1 GB GGUF, cached under the user cache dir
+```
+
+`model pull` downloads the model and rewrites `config.json` so
+`analysis.providers` starts with `local` and `local_model.enabled` is `true`.
+After that, `devmemory analyze` and the dashboard's **Ask** chat use the model
+locally — no network, no key. `devmemory model status` shows the state;
+`devmemory model remove` deletes the cached file. Override the model with
+`devmemory model pull --repo <hf-id> --file <name.gguf>` or the `local_model`
+config keys. A cloud provider listed earlier in `analysis.providers`, or a
+Databricks Genie space, takes precedence when configured.
 
 ### Turning on Databricks
 

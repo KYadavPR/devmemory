@@ -30,6 +30,7 @@ from devmemory.cli.impact import impact_command
 from devmemory.cli.init import init_command
 from devmemory.cli.mcp import mcp_command
 from devmemory.cli.memory import memory_command
+from devmemory.cli.model import model_app
 from devmemory.cli.restore import restore_command
 from devmemory.cli.search import search_command
 from devmemory.cli.serve import serve_command
@@ -136,6 +137,7 @@ app.command(name="diff")(handle_errors(diff_command))
 app.command(name="compare")(handle_errors(compare_command))
 app.command(name="impact")(handle_errors(impact_command))
 app.command(name="analyze")(handle_errors(analyze_command))
+app.add_typer(model_app, name="model")
 app.command(name="search")(handle_errors(search_command))
 app.command(name="memory")(handle_errors(memory_command))
 app.command(name="restore")(handle_errors(restore_command))
@@ -152,9 +154,11 @@ def main() -> None:
     try:
         app()
     except DevMemoryError as exc:
-        err_console.print(f"[bold red]error:[/bold red] {exc.message}")
+        from rich.markup import escape
+
+        err_console.print(f"[bold red]error:[/bold red] {escape(exc.message)}")
         if exc.hint:
-            err_console.print(f"[dim]hint:[/dim] {exc.hint}")
+            err_console.print(f"[dim]hint:[/dim] {escape(exc.hint)}")
         raise SystemExit(exc.exit_code) from exc
     except KeyboardInterrupt:  # pragma: no cover
         err_console.print("[dim]interrupted[/dim]")

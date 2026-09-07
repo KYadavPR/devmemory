@@ -74,9 +74,10 @@ devmemory history                 # the timeline
 devmemory show v7                 # one version, end to end
 devmemory compare 6 7             # what changed + metric/test deltas
 devmemory memory --file auth.py   # "has this area failed before?"
-devmemory analyze v7              # interpretation (rules, or an LLM)
+devmemory analyze v7              # interpretation (rules, an on-device model, or a cloud LLM)
 devmemory analytics               # regressions, feature attempts, file churn
 devmemory serve                   # the dashboard + "Ask" chat (works with no API key)
+devmemory model pull              # an on-device LLM for Ask + analyze (no key, offline)
 devmemory mcp --print-config      # wire the MCP server into Claude Code / Cursor
 devmemory doctor                  # check the setup
 ```
@@ -95,6 +96,13 @@ checkpoint` collects tests and metrics only once you point it at them — set
 
 Credentials (LLM keys, Databricks) are read from the environment — `cp
 .env.example .env` and fill in what you need; the CLI loads it automatically.
+
+**The Ask chat and `analyze` need no key.** A built-in engine answers common
+questions from your local data out of the box. For open-ended questions, run
+`pip install "devmemory-cli[local-llm]"` then `devmemory model pull` — that fetches
+a ~1 GB on-device model (Qwen2.5-Coder-1.5B) once and runs it locally, offline,
+with nothing leaving the machine. A cloud key or a Databricks Genie space is used
+instead when configured.
 
 ## What it is not
 

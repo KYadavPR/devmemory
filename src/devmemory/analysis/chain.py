@@ -7,18 +7,28 @@ guaranteed tail, so :func:`run_analysis` never raises and never returns ``None``
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from devmemory.analysis.base import AnalysisInput, AnalysisProvider, fact_guard
 from devmemory.analysis.llm import LLMProvider
 from devmemory.analysis.rules import RulesProvider
 from devmemory.domain.models import Analysis
 from devmemory.logging import get_logger
 
+if TYPE_CHECKING:
+    from devmemory.config import LocalModelSettings
+
 _log = get_logger(__name__)
 
-_LLM_PROVIDERS = {"anthropic", "openai", "gemini", "openrouter"}
+_LLM_PROVIDERS = {"anthropic", "openai", "gemini", "openrouter", "local"}
 
 
-def build_providers(names: list[str], *, model: str | None = None) -> list[AnalysisProvider]:
+def build_providers(
+    names: list[str],
+    *,
+    model: str | None = None,
+    local_model: LocalModelSettings | None = None,
+) -> list[AnalysisProvider]:
     providers: list[AnalysisProvider] = []
     seen: set[str] = set()
     for raw in names:
@@ -28,6 +38,8 @@ def build_providers(names: list[str], *, model: str | None = None) -> list[Analy
         seen.add(name)
         if name == "rules":
             providers.append(RulesProvider())
+        elif name == "local":
+            providers.append(LLMProvider(name, model, local_model=local_model))
         elif name in _LLM_PROVIDERS:
             providers.append(LLMProvider(name, model))
         else:

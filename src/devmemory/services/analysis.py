@@ -106,7 +106,9 @@ def analyze_version(
     version = get_version(ctx, ref)
     data = build_analysis_input(ctx, version)
     names = providers or ctx.config.analysis.providers
-    chain = build_providers(names, model=ctx.config.analysis.model)
+    chain = build_providers(
+        names, model=ctx.config.analysis.model, local_model=ctx.config.local_model
+    )
     analysis = run_analysis(data, chain)
     if persist:
         VersionRepository(ctx.db).replace_analysis(version.version_id, analysis)

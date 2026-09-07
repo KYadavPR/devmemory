@@ -20,6 +20,7 @@ import sqlite3
 import uuid
 from typing import Any
 
+from devmemory.adapters import local_model as lm
 from devmemory.adapters.genie import GenieAnswer
 from devmemory.analysis.llm import call_llm
 from devmemory.config import resolve_llm_api_key
@@ -29,7 +30,8 @@ from devmemory.services.context import ProjectContext
 _log = get_logger(__name__)
 
 _MAX_ROWS = 50
-_KNOWN_PROVIDERS = ("anthropic", "openai", "gemini", "openrouter")
+_CLOUD_PROVIDERS = ("anthropic", "openai", "gemini", "openrouter")
+_KNOWN_PROVIDERS = ("local", *_CLOUD_PROVIDERS)
 
 _WRITE_RE = re.compile(
     r"\b(insert|update|delete|drop|alter|create|attach|detach|replace|pragma|vacuum|reindex)\b",
@@ -68,33 +70,53 @@ class LocalAskAdapter:
 
     # -- availability ----------------------------------------------------
 
+    def _local_model_ready(self) -> bool:
+        return self._ctx.config.local_model.enabled and lm.is_ready(self._ctx.config.local_model)
+
     def _providers(self) -> list[str]:
-        """The analysis provider chain, then any other known provider - so the
-        user's configured preference wins but a stray key still works."""
+        """The analysis provider chain, then any other usable provider. The
+        on-device model goes first when it's ready, so the default path needs
+        no key; a configured cloud preference still wins if it comes earlier."""
         chain = [p.strip().lower() for p in self._ctx.config.analysis.providers]
         ordered = [p for p in chain if p in _KNOWN_PROVIDERS]
-        ordered += [p for p in _KNOWN_PROVIDERS if p not in ordered]
+        if self._local_model_ready() and "local" not in ordered:
+            ordered.insert(0, "local")
+        ordered += [p for p in _CLOUD_PROVIDERS if p not in ordered]
         return ordered
 
-    def _first_key_provider(self) -> str | None:
-        return next((p for p in self._providers() if resolve_llm_api_key(p)), None)
+    def _first_usable_provider(self) -> str | None:
+        for p in self._providers():
+            if p == "local" and self._local_model_ready():
+                return "local"
+            if p != "local" and resolve_llm_api_key(p):
+                return p
+        return None
 
     @property
     def is_available(self) -> bool:
-        return self._first_key_provider() is not None
+        return self._first_usable_provider() is not None
+
+    @property
+    def is_offline(self) -> bool:
+        """True when the answering engine runs entirely on this machine."""
+        return self._first_usable_provider() == "local"
 
     def unavailable_reason(self) -> str | None:
         if self.is_available:
             return None
         return (
-            "no LLM API key found - set one of ANTHROPIC_API_KEY, OPENAI_API_KEY, "
-            "GEMINI_API_KEY or OPENROUTER_API_KEY (or configure a Databricks Genie space)"
+            "no local model and no LLM API key - run `devmemory model pull` for an "
+            "on-device model, or set ANTHROPIC_API_KEY / OPENAI_API_KEY / "
+            "GEMINI_API_KEY / OPENROUTER_API_KEY (or configure a Databricks Genie space)"
         )
 
     @property
     def engine_label(self) -> str:
-        provider = self._first_key_provider() or "LLM"
-        return f"local - {provider} (text-to-SQL over SQLite)"
+        provider = self._first_usable_provider()
+        if provider == "local":
+            name = self._ctx.config.local_model.filename.removesuffix(".gguf")
+            return f"on-device - {name}"
+        return f"local - {provider or 'LLM'} (text-to-SQL over SQLite)"
 
     # -- schema --------------------------------------------------------
 
@@ -130,7 +152,13 @@ class LocalAskAdapter:
             f"{context}SQLite schema:\n{self._schema()}\n\n"
             f"Question: {question}\n\nReturn the JSON now."
         )
-        raw = call_llm(sql_prompt, system=_SQL_SYSTEM, providers=providers, model=model)
+        raw = call_llm(
+            sql_prompt,
+            system=_SQL_SYSTEM,
+            providers=providers,
+            model=model,
+            local_model=self._ctx.config.local_model,
+        )
         if not raw:
             answer.error = "no LLM provider answered (check API keys and rate limits)"
             return answer
@@ -163,7 +191,13 @@ class LocalAskAdapter:
             f"Rows (JSON): {json.dumps(answer.rows, default=str)[:6000]}\n\n"
             "Write the answer now."
         )
-        text = call_llm(summary_prompt, system=_ANSWER_SYSTEM, providers=providers, model=model)
+        text = call_llm(
+            summary_prompt,
+            system=_ANSWER_SYSTEM,
+            providers=providers,
+            model=model,
+            local_model=self._ctx.config.local_model,
+        )
         answer.text = (text or explanation or "").strip() or None
 
         if len(_HISTORY) < _HISTORY_MAX or conv in _HISTORY:

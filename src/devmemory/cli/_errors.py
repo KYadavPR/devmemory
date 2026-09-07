@@ -11,6 +11,7 @@ from collections.abc import Callable
 from typing import ParamSpec, TypeVar
 
 import typer
+from rich.markup import escape
 
 from devmemory.cli._render import err_console
 from devmemory.domain.errors import DevMemoryError
@@ -25,9 +26,9 @@ def handle_errors(func: Callable[_P, _R]) -> Callable[_P, _R]:
         try:
             return func(*args, **kwargs)
         except DevMemoryError as exc:
-            err_console.print(f"[bold red]error:[/bold red] {exc.message}")
+            err_console.print(f"[bold red]error:[/bold red] {escape(exc.message)}")
             if exc.hint:
-                err_console.print(f"[dim]hint:[/dim] {exc.hint}")
+                err_console.print(f"[dim]hint:[/dim] {escape(exc.hint)}")
             raise typer.Exit(code=exc.exit_code) from exc
 
     return wrapper

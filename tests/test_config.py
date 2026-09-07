@@ -57,6 +57,8 @@ def test_schema_alias_is_used_on_disk(project_paths: ProjectPaths) -> None:
 def test_saved_config_contains_no_secret_keys(project_paths: ProjectPaths) -> None:
     DevMemoryConfig.default_for(project_id="p", project_name="P").save(project_paths)
     text = project_paths.config.read_text(encoding="utf-8").lower()
+    # `max_tokens` is a generation parameter for the on-device model, not a secret.
+    text = text.replace("max_tokens", "")
     for marker in ("token", "secret", "password", "api_key", "apikey"):
         assert marker not in text
 

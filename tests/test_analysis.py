@@ -200,7 +200,7 @@ def test_openrouter_uses_openai_wire_via_call_llm(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-v1-test")
     captured: dict[str, object] = {}
 
-    def fake(name: str, key: str, model: str, prompt: str, system: str) -> str:
+    def fake(name: str, key: str, model: str, prompt: str, system: str, local: object = None) -> str:
         captured.update(name=name, key=key, model=model)
         return '{"ok": true}'
 
@@ -208,6 +208,32 @@ def test_openrouter_uses_openai_wire_via_call_llm(monkeypatch: pytest.MonkeyPatc
     out = llm_mod.call_llm("hi", system="s", providers=["openrouter"])
     assert out == '{"ok": true}'
     assert captured == {"name": "openrouter", "key": "sk-or-v1-test", "model": "openai/gpt-4o-mini"}
+
+
+def test_local_is_a_known_provider_needing_no_key() -> None:
+    from devmemory.config import LocalModelSettings
+
+    chain = build_providers(["local", "rules"], local_model=LocalModelSettings())
+    assert chain[0].name == "local"
+    assert isinstance(chain[-1], RulesProvider)
+
+
+def test_local_provider_routes_to_the_on_device_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    import devmemory.analysis.llm as llm_mod
+    from devmemory.config import LocalModelSettings
+
+    seen: dict[str, object] = {}
+
+    def fake_generate(settings: object, prompt: str, *, system: str) -> str:
+        seen.update(prompt=prompt, system=system)
+        return '{"summary": "ok", "risk": "low"}'
+
+    monkeypatch.setattr("devmemory.adapters.local_model.generate", fake_generate)
+    out = llm_mod.call_llm(
+        "hi", system="s", providers=["local"], local_model=LocalModelSettings()
+    )
+    assert out == '{"summary": "ok", "risk": "low"}'
+    assert seen["system"] == "s"
 
 
 def test_llm_parse_handles_fences_and_junk() -> None:

@@ -102,6 +102,7 @@ def doctor_command(
     # -- integrations (presence only) ----------------------------
     if config is not None:
         rows.append(_llm_row(config))
+        rows.append(_local_model_row(config))
     dbx = resolve_databricks_credentials()
     rows.append(
         (
@@ -137,11 +138,17 @@ def _entire_enabled() -> bool:
         return False
     try:
         out = subprocess.run(  # noqa: S603
-            [exe, "status"], capture_output=True, text=True, timeout=15, check=False
+            [exe, "status"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=15,
+            check=False,
         )
     except (OSError, subprocess.SubprocessError):
         return False
-    text = (out.stdout + out.stderr).lower()
+    text = ((out.stdout or "") + (out.stderr or "")).lower()
     return "not set up" not in text and "not enabled" not in text and "disabled" not in text
 
 
@@ -194,13 +201,31 @@ def _fallback(name: str) -> str | None:
 
 
 def _llm_row(config: DevMemoryConfig) -> tuple[str, str, str]:
-    configured = [p for p in config.analysis.providers if p != "rules"]
+    configured = [p for p in config.analysis.providers if p not in ("rules", "local")]
     have = [p for p in configured if resolve_llm_api_key(p)]
     if not configured:
-        return ("llm analysis", _OK, "rules only (no LLM configured)")
+        return ("llm analysis", _OK, "rules / local only (no cloud LLM configured)")
     if have:
         return ("llm analysis", _OK, f"key present for: {', '.join(have)}")
     return ("llm analysis", _WARN, f"providers {configured} configured but no key in env")
+
+
+def _local_model_row(config: DevMemoryConfig) -> tuple[str, str, str]:
+    from devmemory.adapters import local_model as lm
+
+    settings = config.local_model
+    enabled = settings.enabled or "local" in config.analysis.providers
+    if not enabled:
+        return ("local model", _MISS, "off (run `devmemory model pull` for a no-key LLM)")
+    if not lm.runtime_available():
+        from rich.markup import escape
+
+        return ("local model", _WARN, escape('on, not installed - pip install "devmemory-cli[local-llm]"'))
+    if not lm.is_downloaded(settings):
+        return ("local model", _WARN, "on, but not downloaded - run `devmemory model pull`")
+    size = lm.model_path(settings).stat().st_size / 1e9
+    name = settings.filename.removesuffix(".gguf")
+    return ("local model", _OK, f"ready - {name} ({size:.2f} GB)")
 
 
 __all__ = ["doctor_command"]

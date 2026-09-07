@@ -15,12 +15,15 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from devmemory.analysis.base import AnalysisInput, AnalysisProvider
 from devmemory.config import resolve_llm_api_key
 from devmemory.domain.models import Analysis
 from devmemory.logging import get_logger
+
+if TYPE_CHECKING:
+    from devmemory.config import LocalModelSettings
 
 _log = get_logger(__name__)
 
@@ -29,11 +32,14 @@ _DEFAULT_MODEL = {
     "openai": "gpt-5",
     "gemini": "gemini-flash-latest",  # stable alias; free-tier friendly
     "openrouter": "openai/gpt-4o-mini",  # override with a "…:free" id for no-cost use
+    "local": "qwen2.5-coder-1.5b",  # bundled GGUF; actual file comes from config
 }
 
 _OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
-_SUPPORTED = ("anthropic", "openai", "gemini", "openrouter")
+# ``local`` = the bundled on-device model (devmemory.adapters.local_model); it
+# needs no key, so the availability check is "runtime installed + model pulled".
+_SUPPORTED = ("anthropic", "openai", "gemini", "openrouter", "local")
 
 _SYSTEM = (
     "You are a senior engineer reviewing one AI-assisted change. You are given "
@@ -50,17 +56,26 @@ _SYSTEM = (
 
 
 class LLMProvider(AnalysisProvider):
-    def __init__(self, provider: str, model: str | None = None) -> None:
+    def __init__(
+        self,
+        provider: str,
+        model: str | None = None,
+        *,
+        local_model: LocalModelSettings | None = None,
+    ) -> None:
         self.name = provider.lower()
         self._model = model or _DEFAULT_MODEL.get(self.name)
+        self._local = local_model
 
     def analyze(self, data: AnalysisInput) -> Analysis | None:
-        key = resolve_llm_api_key(self.name)
+        key = "local" if self.name == "local" else resolve_llm_api_key(self.name)
         if not key or self._model is None:
             return None
         prompt = _prompt(data)
         try:
-            if self.name == "anthropic":
+            if self.name == "local":
+                raw = _call_local(self._local, prompt, _SYSTEM)
+            elif self.name == "anthropic":
                 raw = _call_anthropic(key, self._model, prompt, _SYSTEM)
             elif self.name == "openai":
                 raw = _call_openai(key, self._model, prompt, _SYSTEM)
@@ -137,23 +152,30 @@ def _opt(value: object) -> str | None:
 
 
 def call_llm(
-    prompt: str, *, system: str, providers: list[str], model: str | None = None
+    prompt: str,
+    *,
+    system: str,
+    providers: list[str],
+    model: str | None = None,
+    local_model: LocalModelSettings | None = None,
 ) -> str | None:
     """Try each provider in order; return the first non-empty completion, or None.
 
     Used by callers outside the analysis chain (e.g. the task-loop requirement
-    evaluator). Keys come from the environment; any error falls through.
+    evaluator and the Ask chat). Cloud keys come from the environment; the
+    ``local`` provider needs ``local_model`` settings and no key. Any error falls
+    through to the next provider.
     """
     for raw_name in providers:
         name = raw_name.strip().lower()
         if name not in _SUPPORTED:
             continue
-        key = resolve_llm_api_key(name)
+        key = "local" if name == "local" else resolve_llm_api_key(name)
         chosen = model or _DEFAULT_MODEL.get(name)
         if not key or chosen is None:
             continue
         try:
-            text = _dispatch(name, key, chosen, prompt, system)
+            text = _dispatch(name, key, chosen, prompt, system, local_model)
         except Exception as exc:
             _log.warning("llm.call_failed", provider=name, error=str(exc))
             continue
@@ -165,7 +187,16 @@ def call_llm(
 # --- back ends (lazy SDK imports) -------------------------------------------
 
 
-def _dispatch(name: str, key: str, model: str, prompt: str, system: str) -> str:
+def _dispatch(
+    name: str,
+    key: str,
+    model: str,
+    prompt: str,
+    system: str,
+    local_model: LocalModelSettings | None = None,
+) -> str:
+    if name == "local":
+        return _call_local(local_model, prompt, system)
     if name == "anthropic":
         return _call_anthropic(key, model, prompt, system)
     if name == "openai":
@@ -175,6 +206,14 @@ def _dispatch(name: str, key: str, model: str, prompt: str, system: str) -> str:
     if name == "openrouter":
         return _call_openrouter(key, model, prompt, system)
     return ""
+
+
+def _call_local(settings: LocalModelSettings | None, prompt: str, system: str) -> str:
+    """The bundled on-device model. No network, no key."""
+    from devmemory.adapters import local_model
+    from devmemory.config import LocalModelSettings
+
+    return local_model.generate(settings or LocalModelSettings(), prompt, system=system)
 
 
 def _call_anthropic(key: str, model: str, prompt: str, system: str) -> str:

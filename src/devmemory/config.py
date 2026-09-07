@@ -142,6 +142,34 @@ class AnalysisSettings(_Section):
     max_diff_bytes: int = 4000
 
 
+class LocalModelSettings(_Section):
+    """A bundled, on-device LLM (llama.cpp) - no API key, nothing leaves the machine.
+
+    Off by default. ``devmemory model pull`` downloads the GGUF (~1 GB, cached
+    under the user cache dir) and flips ``enabled`` on. Once enabled it is used by
+    the analysis chain (provider name ``local``) and the dashboard's Ask chat
+    whenever no cloud key or Genie space is configured.
+    """
+
+    enabled: bool = False
+    repo: str = Field(
+        default="bartowski/Qwen2.5-Coder-1.5B-Instruct-GGUF",
+        description="Hugging Face repo id hosting the GGUF file.",
+    )
+    filename: str = Field(
+        default="Qwen2.5-Coder-1.5B-Instruct-Q4_K_M.gguf",
+        description="GGUF file to download from the repo.",
+    )
+    context_size: int = Field(default=8192, description="Context window (n_ctx).")
+    max_tokens: int = Field(default=768, description="Max tokens generated per call.")
+    gpu_layers: int = Field(
+        default=0, description="Model layers to offload to GPU (0 = CPU only)."
+    )
+    threads: int | None = Field(
+        default=None, description="CPU threads for inference (default: all cores)."
+    )
+
+
 class GraphSettings(_Section):
     """Optional change-impact analysis via the Entire `graph` plugin.
 
@@ -179,6 +207,7 @@ class DevMemoryConfig(_Section):
     regression: RegressionSettings = Field(default_factory=RegressionSettings)
     databricks: DatabricksSettings = Field(default_factory=DatabricksSettings)
     analysis: AnalysisSettings = Field(default_factory=AnalysisSettings)
+    local_model: LocalModelSettings = Field(default_factory=LocalModelSettings)
     graph: GraphSettings = Field(default_factory=GraphSettings)
     web: WebSettings = Field(default_factory=WebSettings)
 
@@ -299,6 +328,7 @@ __all__ = [
     "DevMemoryConfig",
     "EntireSettings",
     "GraphSettings",
+    "LocalModelSettings",
     "MetricSettings",
     "RegressionSettings",
     "TestSettings",

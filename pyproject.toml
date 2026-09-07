@@ -54,9 +54,10 @@ llm = [
     "openai>=1.40",
     "google-genai>=0.3",
 ]
-all = ["devmemory[mcp,databricks,llm]"]
+local-llm = ["llama-cpp-python>=0.3.2"]
+all = ["devmemory-cli[mcp,databricks,llm,local-llm]"]
 dev = [
-    "devmemory[mcp,databricks,llm]",
+    "devmemory-cli[mcp,databricks,llm]",
     "pytest>=8.2",
     "pytest-cov>=5.0",
     "pytest-xdist>=3.6",
@@ -148,8 +149,16 @@ show_error_codes = true
 enable_error_code = ["redundant-expr", "truthy-bool", "ignore-without-code"]
 
 [[tool.mypy.overrides]]
-module = ["fastmcp.*", "databricks.*", "google.genai.*"]
+module = ["fastmcp.*", "databricks.*", "google.genai.*", "llama_cpp.*"]
 ignore_missing_imports = true
+
+# numpy arrives transitively with the optional `local-llm` extra; its stubs use
+# 3.12+ syntax that trips mypy pinned at 3.11. We never import it directly.
+[[tool.mypy.overrides]]
+module = ["numpy", "numpy.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
+follow_imports_for_stubs = true
 
 [tool.pytest.ini_options]
 minversion = "8.0"

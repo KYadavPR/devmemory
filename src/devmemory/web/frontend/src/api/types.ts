@@ -550,6 +550,7 @@ export interface GenieStatus {
   configured: boolean;
   mode: "genie" | "local" | "rules" | "none";
   engine: string | null;
+  offline: boolean;
   space_id: string | null;
   reason: string | null;
 }

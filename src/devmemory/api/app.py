@@ -172,16 +172,22 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
             )
         local = LocalAskAdapter(ctx)
         if local.is_available:
-            return GenieStatus(configured=True, mode="local", engine=local.engine_label)
+            return GenieStatus(
+                configured=True,
+                mode="local",
+                engine=local.engine_label,
+                offline=local.is_offline,
+            )
         # The built-in rules engine always works - no key, no Databricks.
         return GenieStatus(
             configured=True,
             mode="rules",
             engine=RulesAskAdapter(ctx).engine_label,
+            offline=True,
             reason=(
-                "Answering common questions from your local history. Add an LLM API "
-                "key (OPENROUTER_API_KEY / GEMINI_API_KEY / ANTHROPIC_API_KEY / "
-                "OPENAI_API_KEY) or a Genie space for open-ended questions."
+                "Answering common questions from your local history. Run "
+                "`devmemory model pull` for an on-device LLM (no key), or set a "
+                "cloud key / Genie space, to unlock open-ended questions."
             ),
         )
 

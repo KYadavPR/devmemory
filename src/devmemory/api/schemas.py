@@ -195,6 +195,8 @@ class GenieStatus(BaseModel):
     """Which engine answers questions: ``genie`` | ``local`` | ``rules`` | ``none``."""
     engine: str | None = None
     """Human-readable label for the active engine."""
+    offline: bool = False
+    """True when the active engine runs entirely on this machine (bundled model or rules)."""
     space_id: str | None = None
     reason: str | None = None
 

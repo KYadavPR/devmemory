@@ -127,6 +127,7 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
                 {status.data?.engine && (
                   <p className="muted text-xs" style={{ marginTop: 4 }}>
                     engine: {status.data.engine}
+                    {status.data.offline && " · runs on this machine, nothing leaves"}
                   </p>
                 )}
                 {mode === "rules" && status.data?.reason && (
