@@ -31,6 +31,12 @@ function errorDetail(message: string): string {
 export function Ask() {
   const reduce = useReducedMotion();
   const status = useGenieStatus();
+  const mode = status.data?.mode ?? "none";
+  const engineLabel = mode === "local" ? "Ask" : "Genie";
+  const subtitle =
+    mode === "local"
+      ? "Natural-language questions over your development history. A local LLM writes SQL against your DevMemory database and explains the result - no Databricks needed."
+      : "Natural-language questions over your development history, answered by Databricks Genie against the devmemory.analytics tables.";
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -68,7 +74,7 @@ export function Ask() {
     <>
       <PageHead
         title="Ask"
-        subtitle="Natural-language questions over your development history, answered by Databricks Genie against the devmemory.analytics tables."
+        subtitle={subtitle}
         actions={
           turns.length > 0 ? (
             <button className="btn" onClick={newChat}>
@@ -79,11 +85,19 @@ export function Ask() {
       />
 
       {status.data && !status.data.configured ? (
-        <Card title="Genie is not configured" pad>
+        <Card title="Ask is not configured" pad>
           <p className="text-sm">{status.data.reason}</p>
           <p className="muted text-sm">
-            Set a Genie space that reads the <code>devmemory.analytics</code> schema, then point
-            DevMemory at it:
+            The quickest path is a local LLM - set any one API key in the environment (or a{" "}
+            <code>.env</code> next to where you run <code>devmemory serve</code>):
+          </p>
+          <pre className="loop-prompt">{`# any one of these enables Ask, no Databricks required
+OPENROUTER_API_KEY=sk-or-...
+GEMINI_API_KEY=...
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...`}</pre>
+          <p className="muted text-sm">
+            Or point DevMemory at a Databricks Genie space for warehouse-scale queries:
           </p>
           <pre className="loop-prompt">{`# .devmemory/config.json
 "databricks": { "enabled": true, "genie_space_id": "01ef..." }
@@ -91,10 +105,6 @@ export function Ask() {
 # or the environment
 DATABRICKS_HOST=...       DATABRICKS_TOKEN=...
 DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
-          <p className="muted text-xs">
-            Run <code>devmemory databricks sync</code> first so the tables have data for Genie to
-            query.
-          </p>
         </Card>
       ) : (
         <Card flush>
@@ -104,8 +114,17 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
                 <EmptyState
                   icon="sparkles"
                   title="Ask about your project"
-                  sub="Genie writes the SQL, runs it on Databricks, and explains the result."
+                  sub={
+                    mode === "local"
+                      ? "A local LLM writes the SQL, DevMemory runs it read-only, and the LLM explains the result."
+                      : "Genie writes the SQL, runs it on Databricks, and explains the result."
+                  }
                 />
+                {status.data?.engine && (
+                  <p className="muted text-xs" style={{ marginTop: 4 }}>
+                    engine: {status.data.engine}
+                  </p>
+                )}
                 <div className="chat__suggest">
                   {SUGGESTIONS.map((s) => (
                     <button key={s} className="chip" onClick={() => send(s)}>
@@ -124,7 +143,7 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
                   animate={{ opacity: 1, y: 0 }}
                   transition={spring.gentle}
                 >
-                  <TurnView turn={turn} />
+                  <TurnView turn={turn} engineLabel={engineLabel} />
                 </m.div>
               ))}
             </AnimatePresence>
@@ -136,7 +155,7 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
                 animate={{ opacity: 1, y: 0 }}
                 transition={spring.gentle}
               >
-                <div className="chat__role">Genie</div>
+                <div className="chat__role">{engineLabel}</div>
                 <div className="chat__body row" style={{ gap: 8, color: "var(--text-muted)" }}>
                   <ThinkingDots /> thinking…
                 </div>
@@ -172,7 +191,7 @@ DATABRICKS_GENIE_SPACE_ID=01ef...`}</pre>
   );
 }
 
-function TurnView({ turn }: { turn: Turn }) {
+function TurnView({ turn, engineLabel }: { turn: Turn; engineLabel: string }) {
   if (turn.role === "user") {
     return (
       <div className="chat__msg chat__msg--user">
@@ -183,7 +202,7 @@ function TurnView({ turn }: { turn: Turn }) {
   if (turn.role === "error") {
     return (
       <div className="chat__msg chat__msg--genie">
-        <div className="chat__role">Genie</div>
+        <div className="chat__role">{engineLabel}</div>
         <div className="chat__body callout callout--bad" style={{ padding: "8px 10px" }}>
           <Icon name="alert" size={13} /> {turn.text}
         </div>
@@ -194,7 +213,7 @@ function TurnView({ turn }: { turn: Turn }) {
   const a = turn.answer;
   return (
     <div className="chat__msg chat__msg--genie">
-      <div className="chat__role">Genie</div>
+      <div className="chat__role">{engineLabel}</div>
       <div className="chat__body stack" style={{ gap: 10 }}>
         {a.error && (
           <div className="callout callout--bad" style={{ padding: "8px 10px" }}>

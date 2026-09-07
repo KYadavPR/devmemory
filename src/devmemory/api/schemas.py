@@ -183,7 +183,7 @@ class ProjectBriefRequest(BaseModel):
 
 
 class GenieAskRequest(BaseModel):
-    """One turn in the dashboard's Genie chat."""
+    """One turn in the dashboard's Ask chat."""
 
     question: str
     conversation_id: str | None = None
@@ -191,6 +191,10 @@ class GenieAskRequest(BaseModel):
 
 class GenieStatus(BaseModel):
     configured: bool
+    mode: str = "none"
+    """Which engine answers questions: ``genie`` | ``local`` | ``none``."""
+    engine: str | None = None
+    """Human-readable label for the active engine."""
     space_id: str | None = None
     reason: str | None = None
 

@@ -21,6 +21,7 @@ from devmemory.cli._errors import handle_errors
 from devmemory.cli._render import console, err_console
 from devmemory.cli.analytics import analytics_command, databricks_app
 from devmemory.cli.analyze import analyze_command
+from devmemory.cli.backfill import backfill_command
 from devmemory.cli.checkpoint import checkpoint_command
 from devmemory.cli.compare import compare_command, diff_command
 from devmemory.cli.doctor import doctor_command
@@ -128,6 +129,7 @@ app.command(name="init")(handle_errors(init_command))
 app.command(name="doctor")(handle_errors(doctor_command))
 app.command(name="status")(handle_errors(status_command))
 app.command(name="checkpoint")(handle_errors(checkpoint_command))
+app.command(name="backfill")(handle_errors(backfill_command))
 app.command(name="history")(handle_errors(history_command))
 app.command(name="show")(handle_errors(show_command))
 app.command(name="diff")(handle_errors(diff_command))

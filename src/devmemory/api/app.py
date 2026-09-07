@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from devmemory.__about__ import __version__
 from devmemory.adapters.genie import GenieAdapter, GenieAnswer, GenieUnavailableError
 from devmemory.adapters.graph import GraphImpact
+from devmemory.adapters.local_ask import LocalAskAdapter
 from devmemory.api import mappers
 from devmemory.api.schemas import (
     AgentCheckRequest,
@@ -156,15 +157,28 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
         doc = briefsvc.set_brief(ctx, body.content)
         return ProjectBriefDoc(content=doc.content, updated_at=doc.updated_at)
 
-    # -- Genie chat (Databricks) -------------------------------------
+    # -- Ask chat (Databricks Genie, or a local LLM fallback) --------
 
     @app.get("/api/genie/status", response_model=GenieStatus)
     def genie_status(ctx: Ctx) -> GenieStatus:
         g = GenieAdapter(ctx.config)
+        if g.is_configured:
+            return GenieStatus(
+                configured=True,
+                mode="genie",
+                engine="Databricks Genie",
+                space_id=g.space_id or None,
+            )
+        local = LocalAskAdapter(ctx)
+        if local.is_available:
+            return GenieStatus(configured=True, mode="local", engine=local.engine_label)
         return GenieStatus(
-            configured=g.is_configured,
-            space_id=g.space_id or None,
-            reason=g.unavailable_reason(),
+            configured=False,
+            mode="none",
+            reason=(
+                "Ask needs either a Databricks Genie space or an LLM API key. "
+                + (local.unavailable_reason() or "")
+            ).strip(),
         )
 
     @app.post("/api/genie/ask", response_model=GenieAnswer)
@@ -173,12 +187,21 @@ def create_app(repo_path: Path | str | None = None, *, enable_restore: bool = Fa
         if not question:
             raise HTTPException(status_code=422, detail="question is empty")
         g = GenieAdapter(ctx.config)
-        if not g.is_configured:
-            raise HTTPException(status_code=503, detail=g.unavailable_reason() or "Genie unavailable")
-        try:
-            return g.ask(question, conversation_id=body.conversation_id)
-        except GenieUnavailableError as exc:
-            raise HTTPException(status_code=502, detail=exc.message) from exc
+        if g.is_configured:
+            try:
+                return g.ask(question, conversation_id=body.conversation_id)
+            except GenieUnavailableError as exc:
+                raise HTTPException(status_code=502, detail=exc.message) from exc
+        local = LocalAskAdapter(ctx)
+        if local.is_available:
+            try:
+                return local.ask(question, conversation_id=body.conversation_id)
+            except DevMemoryError as exc:  # pragma: no cover - defensive
+                raise HTTPException(status_code=502, detail=exc.message) from exc
+        raise HTTPException(
+            status_code=503,
+            detail=local.unavailable_reason() or "Ask is not configured",
+        )
 
     # -- versions ------------------------------------------------------
 

@@ -47,7 +47,8 @@ def _run(*args: str) -> str:
 
 def test_full_lifecycle(repo: TmpGitRepo) -> None:
     # 1. init + configure test/metric collection
-    _run("init", "--name", "Checkout", "--project-id", "checkout")
+    #    (--no-backfill so this test owns the version numbering explicitly)
+    _run("init", "--name", "Checkout", "--project-id", "checkout", "--no-backfill")
     cfg_path = repo.path / ".devmemory" / "config.json"
     cfg = json.loads(cfg_path.read_text())
     cfg["tests"] = {"command": f"{PY} run_tests.py"}

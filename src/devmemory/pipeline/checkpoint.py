@@ -46,6 +46,12 @@ _log = get_logger(__name__)
 
 
 class CheckpointRequest(BaseModel):
+    target: str = "HEAD"
+    """Which commit to record. Defaults to ``HEAD``; ``backfill`` passes a sha."""
+    lightweight: bool = False
+    """Skip the test run, graph impact, and source snapshot (used by ``backfill``)."""
+    skip_analysis: bool = False
+    """Skip LLM analysis regardless of config (used by ``backfill``)."""
     intent: str | None = None
     feature: str | None = None
     agent: str | None = None
@@ -86,14 +92,19 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
             st.data["repo_root"] = str(ctx.paths.repo_root)
 
         with run.stage("resolve_commit") as st:
-            commit = ctx.git.commit("HEAD")
+            commit = ctx.git.commit(request.target)
             parent = commit.parent
             branch = ctx.git.current_branch()
             st.data |= {"commit": commit.sha, "parent": parent, "branch": branch}
 
+        is_head = commit.sha == ctx.git.head_sha()
+
         with run.stage("check_working_tree") as st:
             state = ctx.git.working_tree_state()
-            if state.has_uncommitted_changes:
+            if not is_head:
+                st.status = "skipped"
+                st.detail = "recording a historical commit"
+            elif state.has_uncommitted_changes:
                 msg = (
                     f"{len(state.staged) + len(state.unstaged)} uncommitted change(s); "
                     "the version records the committed state only."
@@ -163,10 +174,22 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
         )
 
         with run.stage("collect_tests") as st:
-            tests = _collect_tests(ctx, request, st)
+            if request.lightweight:
+                st.status = "skipped"
+                st.detail = "lightweight run"
+                tests = None
+            else:
+                tests = _collect_tests(ctx, request, st)
 
         with run.stage("collect_metrics") as st:
-            metrics = _collect_metrics(ctx, request, previous, st)
+            if request.lightweight:
+                # A metrics command would run against the current tree, not this
+                # historical commit - meaningless. Skip it.
+                st.status = "skipped"
+                st.detail = "lightweight run"
+                metrics = list(request.metrics)
+            else:
+                metrics = _collect_metrics(ctx, request, previous, st)
 
         with run.stage("check_previous_attempts") as st:
             prior = previous_attempts(
@@ -250,7 +273,10 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
                 st.status = "skipped"
 
         with run.stage("collect_graph_impact") as st:
-            if not ctx.config.graph.enabled:
+            if request.lightweight:
+                st.status = "skipped"
+                st.detail = "lightweight run"
+            elif not ctx.config.graph.enabled:
                 st.status = "skipped"
             elif not ctx.graph.is_available:
                 st.status = "skipped"
@@ -272,7 +298,7 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
                     st.detail = str(exc)
 
         with run.stage("generate_analysis") as st:
-            if not ctx.config.analysis.enabled:
+            if request.skip_analysis or not ctx.config.analysis.enabled:
                 st.status = "skipped"
             else:
                 try:
@@ -302,7 +328,7 @@ def run_checkpoint(ctx: ProjectContext, request: CheckpointRequest) -> Checkpoin
                 st.detail = exc.message
 
         with run.stage("create_artifact") as st:
-            if not request.snapshot or not ctx.config.artifacts.enabled:
+            if request.lightweight or not request.snapshot or not ctx.config.artifacts.enabled:
                 st.status = "skipped"
             else:
                 try:

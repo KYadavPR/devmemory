@@ -265,6 +265,32 @@ class GitAdapter:
         out = self._out("rev-list", f"--max-count={limit}", rev_range)
         return out.splitlines() if out else []
 
+    def rev_list(
+        self,
+        *,
+        limit: int = 200,
+        since: str | None = None,
+        first_parent: bool = True,
+        no_merges: bool = True,
+        rev: str = "HEAD",
+    ) -> list[str]:
+        """Commit shas from ``rev`` backwards, returned oldest-first.
+
+        ``--max-count`` is applied before ``--reverse``, so this yields the
+        oldest members of the most recent ``limit`` commits - the right window
+        for backfilling a timeline.
+        """
+        args = ["rev-list", f"--max-count={limit}", "--reverse"]
+        if first_parent:
+            args.append("--first-parent")
+        if no_merges:
+            args.append("--no-merges")
+        if since:
+            args.append(f"--since={since}")
+        args.append(rev)
+        out = self._out(*args)
+        return out.splitlines() if out else []
+
     def cat_ref_blob(self, ref: str, path: str) -> str | None:
         """Read a blob from an arbitrary ref/tree (used for Entire checkpoint refs)."""
         proc = self._run("cat-file", "-p", f"{ref}:{path}", check=False)

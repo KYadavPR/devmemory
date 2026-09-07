@@ -54,6 +54,10 @@ cd your-repo
 devmemory init --name "My Project"
 ```
 
+`init` backfills a lightweight Development Version for each of the last 100 commits,
+so an existing project has a populated timeline from the start (`--no-backfill` to
+skip it; `devmemory backfill --limit N --since <date>` to import more later).
+
 Then, after each meaningful AI-assisted commit:
 
 ```bash
@@ -72,7 +76,7 @@ devmemory compare 6 7             # what changed + metric/test deltas
 devmemory memory --file auth.py   # "has this area failed before?"
 devmemory analyze v7              # interpretation (rules, or an LLM)
 devmemory analytics               # regressions, feature attempts, file churn
-devmemory serve                   # the dashboard
+devmemory serve                   # the dashboard (with an "Ask" chat)
 devmemory mcp --print-config      # wire the MCP server into Claude Code / Cursor
 devmemory doctor                  # check the setup
 ```
