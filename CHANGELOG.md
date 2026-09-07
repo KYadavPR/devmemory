@@ -6,6 +6,47 @@ All notable changes to DevMemory are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added — Ask with no setup, on-device LLM, history backfill
+
+- **The Ask chat and `devmemory analyze` now work with no API key.** Engine
+  precedence: Databricks Genie → a cloud LLM key → a bundled on-device model →
+  a built-in pattern answerer that is always available.
+- **Built-in Ask engine** (`adapters/ask_rules.py`): matches a question to a
+  fixed set of intents (counts, regressions, failing tests, file churn,
+  co-change, feature/agent breakdowns, a metric over time, biggest diffs, failed
+  approaches, recent activity, a single version, "has this file failed before")
+  and answers straight from the local database. No dependencies.
+- **Bundled on-device LLM** (`adapters/local_model.py`, provider name `local`):
+  `pip install "devmemory-cli[local-llm]"` then `devmemory model pull` downloads
+  a ~1 GB GGUF (Qwen2.5-Coder-1.5B by default) into a user-global cache and runs
+  it locally via `llama-cpp-python` — no key, nothing leaves the machine. New
+  `local_model` config section and `devmemory model pull|status|remove`.
+- **Local text-to-SQL fallback for Ask** (`adapters/local_ask.py`): when a cloud
+  key or the on-device model is available but no Genie space, the LLM writes one
+  read-only `SELECT` against the local SQLite database (guarded: single
+  statement, read-only connection, keyword deny-list), DevMemory runs it, and the
+  LLM summarizes the rows.
+- **`devmemory backfill`** and an automatic backfill on `devmemory init`
+  (`--no-backfill` to skip): records a lightweight Development Version for each
+  of the recent commits, so a project that adopts DevMemory late still has a
+  populated timeline, analytics and Ask.
+- `CheckpointRequest` gains `target` / `lightweight` / `skip_analysis`;
+  `GitAdapter.rev_list`.
+- Tactile spring motion (Framer Motion via `LazyMotion`) at six meaningful
+  moments in the dashboard — button press, status-banner transitions, timeline
+  entrance, requirement-pill changes, version-row stagger, the "thinking"
+  indicator — all gated on `prefers-reduced-motion`.
+- `/api/genie/status` reports `mode` (`genie` | `local` | `rules`) and `offline`.
+
+### Fixed
+
+- The `all` and `dev` optional-dependency groups referenced `devmemory[...]`;
+  corrected to `devmemory-cli[...]` after the distribution rename.
+- `devmemory doctor` crashed a subprocess reader thread on non-UTF-8 / empty
+  `entire status` output.
+- Dashboard sub-navigation anchors (`#changes`, `#risks`, …) were interpreted as
+  routes by `HashRouter` and 404'd; they now scroll in-page.
+
 ### Added — State-aware coding loop
 
 - A `Task` layer on top of the existing evidence collectors (Git, Entire, tests,
