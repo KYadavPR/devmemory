@@ -1,7 +1,7 @@
 """Development-intelligence analytics.
 
 Every question is answered by one query with two implementations that return the
-*same* shape: a local one over SQLite (always available, used by the demo) and a
+*same* shape: a local one over SQLite (always available, the default) and a
 Databricks one over the published Delta tables (when a workspace is configured).
 The result carries a ``source`` so the dashboard can badge it.
 """
@@ -280,8 +280,8 @@ def _try_databricks(ctx: ProjectContext) -> AnalyticsSummary | None:
         for r in rows
         if str(r.get("is_regression")).lower() == "true" or r.get("status") == "REGRESSION"
     )
-    # For the richer breakdowns Databricks would run more queries; the demo path
-    # is local, so keep the remote summary to the top-line numbers plus a marker.
+    # For the richer breakdowns Databricks would run more queries; the local path
+    # already has them, so keep the remote summary to the top-line numbers plus a marker.
     local = _local_summary(ctx)
     return local.model_copy(
         update={
